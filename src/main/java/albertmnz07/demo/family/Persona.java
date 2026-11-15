@@ -17,11 +17,19 @@ public class Persona {
     @Column(nullable = false, unique = true)
     private String dni;
 
+    @Column(nullable = false, length = 1_048_576)
+    private byte[] frontPhoto;
+
+    @Column(nullable = false, length = 1_048_576)
+    private byte[] backPhoto;
+
     protected Persona() {
     }
 
-    public Persona(String dni) {
+    public Persona(String dni, byte[] frontPhoto, byte[] backPhoto) {
         this.dni = dni;
+        this.frontPhoto = frontPhoto;
+        this.backPhoto = backPhoto;
     }
 
     public UUID getId() {
@@ -30,5 +38,17 @@ public class Persona {
 
     public String getDni() {
         return dni;
+    }
+
+    public byte[] getFrontPhoto() {
+        return frontPhoto;
+    }
+
+    public byte[] getBackPhoto() {
+        return backPhoto;
+    }
+
+    public Dni dniEntity() {
+        return new Dni(dni, frontPhoto, backPhoto);
     }
 }

@@ -25,6 +25,8 @@ public class Invite {
     @Column(nullable = false)
     private Instant expiresAt;
 
+    private Instant redeemedAt;
+
     protected Invite() {
     }
 
@@ -48,5 +50,17 @@ public class Invite {
 
     public Instant getExpiresAt() {
         return expiresAt;
+    }
+
+    public boolean isExpiredAt(Instant now) {
+        return !now.isBefore(expiresAt);
+    }
+
+    public boolean isRedeemed() {
+        return redeemedAt != null;
+    }
+
+    public void redeem(Instant now) {
+        this.redeemedAt = now;
     }
 }

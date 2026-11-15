@@ -1,9 +1,11 @@
 package albertmnz07.demo.family;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -14,16 +16,26 @@ public class FamilyService {
 
     private final FamilyRepository families;
     private final InviteRepository invites;
+    private final MembershipRepository memberships;
+    private final ConsentRepository consents;
     private final InviteCodeGenerator codeGenerator;
 
-    public FamilyService(FamilyRepository families, InviteRepository invites, InviteCodeGenerator codeGenerator) {
+    public FamilyService(FamilyRepository families, InviteRepository invites, MembershipRepository memberships,
+            ConsentRepository consents, InviteCodeGenerator codeGenerator) {
         this.families = families;
         this.invites = invites;
+        this.memberships = memberships;
+        this.consents = consents;
         this.codeGenerator = codeGenerator;
     }
 
+    @Transactional
     public Family createFamily(Persona creator, String name) {
-        return families.save(new Family(name, creator));
+        Family family = families.save(new Family(name, creator));
+        Membership adminMembership = new Membership(family, creator);
+        adminMembership.accept();
+        memberships.save(adminMembership);
+        return family;
     }
 
     public Family getFamily(UUID id) {
@@ -40,5 +52,38 @@ public class FamilyService {
             }
         }
         throw new IllegalStateException("Could not generate a unique invite code");
+    }
+
+    @Transactional
+    public Membership redeemInvite(String code, Persona persona) {
+        Invite invite = invites.findByCode(code)
+                .orElseThrow(() -> new NoSuchElementException("Invite not found: " + code));
+        Instant now = Instant.now();
+        if (invite.isExpiredAt(now)) {
+            throw new IllegalStateException("Invite has expired: " + code);
+        }
+        if (invite.isRedeemed()) {
+            throw new IllegalStateException("Invite has already been redeemed: " + code);
+        }
+        invite.redeem(now);
+        invites.save(invite);
+        Membership membership = new Membership(invite.getFamily(), persona);
+        membership.accept();
+        memberships.save(membership);
+        consents.save(new Consent(invite.getFamily(), persona, now));
+        return membership;
+    }
+
+    public Optional<Dni> visibleDni(Family family, Persona viewer, Persona target) {
+        boolean viewerIsMember = memberships.existsByFamilyAndPersonaAndStatus(
+                family, viewer, Membership.Status.ACCEPTED);
+        if (!viewerIsMember) {
+            return Optional.empty();
+        }
+        boolean consentInForce = consents.existsByFamilyAndPersona(family, target);
+        if (!consentInForce) {
+            return Optional.empty();
+        }
+        return Optional.of(target.dniEntity());
     }
 }
