@@ -32,9 +32,7 @@ public class FamilyService {
     @Transactional
     public Family createFamily(Persona creator, String name) {
         Family family = families.save(new Family(name, creator));
-        Membership adminMembership = new Membership(family, creator);
-        adminMembership.accept();
-        memberships.save(adminMembership);
+        acceptMembership(family, creator, Instant.now());
         return family;
     }
 
@@ -67,11 +65,15 @@ public class FamilyService {
         }
         invite.redeem(now);
         invites.save(invite);
-        Membership membership = new Membership(invite.getFamily(), persona);
+        return acceptMembership(invite.getFamily(), persona, now);
+    }
+
+    private Membership acceptMembership(Family family, Persona persona, Instant now) {
+        Membership membership = new Membership(family, persona);
         membership.accept();
-        memberships.save(membership);
-        consents.save(new Consent(invite.getFamily(), persona, now));
-        return membership;
+        Membership accepted = memberships.save(membership);
+        consents.save(new Consent(family, persona, now));
+        return accepted;
     }
 
     public Optional<Dni> visibleDni(Family family, Persona viewer, Persona target) {
