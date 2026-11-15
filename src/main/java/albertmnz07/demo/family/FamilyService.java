@@ -90,6 +90,19 @@ public class FamilyService {
     }
 
     @Transactional
+    public void removeMember(Family family, Persona persona) {
+        if (family.getAdmin().getId().equals(persona.getId())) {
+            throw new IllegalArgumentException("Cannot remove the family admin");
+        }
+        memberships.findByFamilyAndPersona(family, persona)
+                .ifPresent(membership -> {
+                    membership.remove();
+                    memberships.save(membership);
+                });
+        revokeConsent(family, persona);
+    }
+
+    @Transactional
     public void revokeConsent(Family family, Persona persona) {
         consents.findByFamilyAndPersona(family, persona)
                 .filter(Consent::isInForce)

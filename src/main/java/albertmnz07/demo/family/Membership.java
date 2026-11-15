@@ -20,7 +20,8 @@ public class Membership {
 
     public enum Status {
         INVITED,
-        ACCEPTED
+        ACCEPTED,
+        REMOVED
     }
 
     @Id
@@ -48,6 +49,10 @@ public class Membership {
 
     public void accept() {
         this.status = Status.ACCEPTED;
+    }
+
+    public void remove() {
+        this.status = Status.REMOVED;
     }
 
     public UUID getId() {

@@ -13,7 +13,7 @@ A grouping of personas that can see one another's DNI while consent is in force,
 _Avoid_: Group, Team
 
 **Membership**:
-The link between a persona and a family, with lifecycle `invited → accepted`; acceptance is the act of granting consent for that persona in that family.
+The link between a persona and a family, with lifecycle `invited → accepted → removed`; acceptance is the act of granting consent for that persona in that family, and removal revokes it.
 _Avoid_: Relationship, Link
 
 **Consent**:
