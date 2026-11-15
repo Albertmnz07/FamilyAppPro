@@ -69,4 +69,8 @@ public class Consent {
     public Instant getGrantedAt() {
         return grantedAt;
     }
+
+    public Instant getRevokedAt() {
+        return revokedAt;
+    }
 }

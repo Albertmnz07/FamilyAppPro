@@ -42,8 +42,10 @@ class ConsentLifecycleTest {
         Persona member = personaRepository.save(new Persona("22222222B", FRONT, BACK));
         familyService.redeemInvite(invite.getCode(), member);
         familyService.revokeConsent(family, member);
+        assertThat(familyService.visibleDni(family, admin, member)).isEmpty();
 
-        familyService.acceptMembership(family, member);
+        Invite renewedInvite = familyService.issueInvite(family);
+        familyService.redeemInvite(renewedInvite.getCode(), member);
 
         assertThat(familyService.visibleDni(family, admin, member)).isPresent();
     }

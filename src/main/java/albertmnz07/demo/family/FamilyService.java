@@ -32,7 +32,7 @@ public class FamilyService {
     @Transactional
     public Family createFamily(Persona creator, String name) {
         Family family = families.save(new Family(name, creator));
-        Membership membership = join(family, creator);
+        Membership membership = inviteMembership(family, creator);
         acceptMembership(membership, Instant.now());
         return family;
     }
@@ -66,11 +66,11 @@ public class FamilyService {
         }
         invite.redeem(now);
         invites.save(invite);
-        Membership membership = join(invite.getFamily(), persona);
+        Membership membership = inviteMembership(invite.getFamily(), persona);
         return acceptMembership(membership, now);
     }
 
-    private Membership join(Family family, Persona persona) {
+    private Membership inviteMembership(Family family, Persona persona) {
         return memberships.findByFamilyAndPersona(family, persona)
                 .orElseGet(() -> memberships.save(new Membership(family, persona)));
     }
@@ -80,14 +80,6 @@ public class FamilyService {
         Membership accepted = memberships.save(membership);
         grantConsent(membership.getFamily(), membership.getPersona(), now);
         return accepted;
-    }
-
-    @Transactional
-    public Membership acceptMembership(Family family, Persona persona) {
-        Membership membership = memberships.findByFamilyAndPersona(family, persona)
-                .orElseThrow(() -> new NoSuchElementException(
-                        "Membership not found for persona " + persona.getId() + " in family " + family.getId()));
-        return acceptMembership(membership, Instant.now());
     }
 
     private void grantConsent(Family family, Persona persona, Instant now) {
