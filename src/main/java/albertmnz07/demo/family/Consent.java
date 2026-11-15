@@ -30,6 +30,8 @@ public class Consent {
     @Column(nullable = false)
     private Instant grantedAt;
 
+    private Instant revokedAt;
+
     protected Consent() {
     }
 
@@ -37,6 +39,19 @@ public class Consent {
         this.family = family;
         this.persona = persona;
         this.grantedAt = grantedAt;
+    }
+
+    public boolean isInForce() {
+        return revokedAt == null;
+    }
+
+    public void grant(Instant now) {
+        this.grantedAt = now;
+        this.revokedAt = null;
+    }
+
+    public void revoke(Instant now) {
+        this.revokedAt = now;
     }
 
     public UUID getId() {

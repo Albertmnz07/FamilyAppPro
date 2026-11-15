@@ -32,7 +32,8 @@ public class FamilyService {
     @Transactional
     public Family createFamily(Persona creator, String name) {
         Family family = families.save(new Family(name, creator));
-        acceptMembership(family, creator, Instant.now());
+        Membership membership = join(family, creator);
+        acceptMembership(membership, Instant.now());
         return family;
     }
 
@@ -65,15 +66,45 @@ public class FamilyService {
         }
         invite.redeem(now);
         invites.save(invite);
-        return acceptMembership(invite.getFamily(), persona, now);
+        Membership membership = join(invite.getFamily(), persona);
+        return acceptMembership(membership, now);
     }
 
-    private Membership acceptMembership(Family family, Persona persona, Instant now) {
-        Membership membership = new Membership(family, persona);
+    private Membership join(Family family, Persona persona) {
+        return memberships.findByFamilyAndPersona(family, persona)
+                .orElseGet(() -> memberships.save(new Membership(family, persona)));
+    }
+
+    private Membership acceptMembership(Membership membership, Instant now) {
         membership.accept();
         Membership accepted = memberships.save(membership);
-        consents.save(new Consent(family, persona, now));
+        grantConsent(membership.getFamily(), membership.getPersona(), now);
         return accepted;
+    }
+
+    @Transactional
+    public Membership acceptMembership(Family family, Persona persona) {
+        Membership membership = memberships.findByFamilyAndPersona(family, persona)
+                .orElseThrow(() -> new NoSuchElementException(
+                        "Membership not found for persona " + persona.getId() + " in family " + family.getId()));
+        return acceptMembership(membership, Instant.now());
+    }
+
+    private void grantConsent(Family family, Persona persona, Instant now) {
+        Consent consent = consents.findByFamilyAndPersona(family, persona)
+                .orElseGet(() -> new Consent(family, persona, now));
+        consent.grant(now);
+        consents.save(consent);
+    }
+
+    @Transactional
+    public void revokeConsent(Family family, Persona persona) {
+        consents.findByFamilyAndPersona(family, persona)
+                .filter(Consent::isInForce)
+                .ifPresent(consent -> {
+                    consent.revoke(Instant.now());
+                    consents.save(consent);
+                });
     }
 
     public Optional<Dni> visibleDni(Family family, Persona viewer, Persona target) {
@@ -82,7 +113,9 @@ public class FamilyService {
         if (!viewerIsMember) {
             return Optional.empty();
         }
-        boolean consentInForce = consents.existsByFamilyAndPersona(family, target);
+        boolean consentInForce = consents.findByFamilyAndPersona(family, target)
+                .map(Consent::isInForce)
+                .orElse(false);
         if (!consentInForce) {
             return Optional.empty();
         }
