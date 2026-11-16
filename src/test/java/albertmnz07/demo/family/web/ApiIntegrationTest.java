@@ -6,8 +6,10 @@ import albertmnz07.demo.family.FamilyRepository;
 import albertmnz07.demo.family.Invite;
 import albertmnz07.demo.family.InviteRepository;
 import albertmnz07.demo.family.MembershipRepository;
+import albertmnz07.demo.family.Persona;
 import albertmnz07.demo.family.PersonaRepository;
 import albertmnz07.demo.family.auth.AuthTokenRepository;
+import albertmnz07.demo.family.photo.PhotoStore;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -22,6 +24,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -65,6 +68,9 @@ class ApiIntegrationTest {
     @Autowired
     AuthTokenRepository tokens;
 
+    @Autowired
+    PhotoStore photos;
+
     @AfterEach
     void cleanUp() {
         tokens.deleteAll();
@@ -90,6 +96,15 @@ class ApiIntegrationTest {
                 .andExpect(header().string("Content-Type", "image/jpeg"))
                 .andExpect(header().string("Cache-Control", "no-store"))
                 .andExpect(content().bytes(FRONT));
+    }
+
+    @Test
+    void storesPhotosInTheObjectStore() throws Exception {
+        UUID personaId = registerPersona(ADMIN_DNI);
+        Persona persona = personas.findById(personaId).orElseThrow();
+
+        assertArrayEquals(FRONT, photos.get(persona.getFrontPhotoKey()).orElseThrow());
+        assertArrayEquals(BACK, photos.get(persona.getBackPhotoKey()).orElseThrow());
     }
 
     @Test

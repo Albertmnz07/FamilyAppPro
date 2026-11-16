@@ -2,6 +2,8 @@ package albertmnz07.demo.family.web;
 
 import albertmnz07.demo.family.Persona;
 import albertmnz07.demo.family.PersonaService;
+import albertmnz07.demo.family.error.NotFoundException;
+import albertmnz07.demo.family.photo.PhotoStore;
 import albertmnz07.demo.family.validation.ValidDni;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
@@ -28,9 +30,11 @@ import java.io.IOException;
 public class PersonaController {
 
     private final PersonaService personas;
+    private final PhotoStore photos;
 
-    public PersonaController(PersonaService personas) {
+    public PersonaController(PersonaService personas, PhotoStore photos) {
         this.personas = personas;
+        this.photos = photos;
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -58,11 +62,15 @@ public class PersonaController {
 
     @GetMapping("/me/photos/front")
     public ResponseEntity<byte[]> myFrontPhoto(@ActingPersona Persona persona) {
-        return PhotoResponses.of(persona.getFrontPhoto(), persona.getFrontPhotoContentType());
+        return photos.get(persona.getFrontPhotoKey())
+                .map(photo -> PhotoResponses.of(photo, persona.getFrontPhotoContentType()))
+                .orElseThrow(() -> new NotFoundException("Front photo not found"));
     }
 
     @GetMapping("/me/photos/back")
     public ResponseEntity<byte[]> myBackPhoto(@ActingPersona Persona persona) {
-        return PhotoResponses.of(persona.getBackPhoto(), persona.getBackPhotoContentType());
+        return photos.get(persona.getBackPhotoKey())
+                .map(photo -> PhotoResponses.of(photo, persona.getBackPhotoContentType()))
+                .orElseThrow(() -> new NotFoundException("Back photo not found"));
     }
 }

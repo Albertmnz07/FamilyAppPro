@@ -16,9 +16,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Import({FamilyService.class, InviteCodeGenerator.class})
 class InviteRedemptionTest {
 
-    private static final byte[] FRONT = {1, 2, 3};
-    private static final byte[] BACK = {4, 5, 6};
-
     @Autowired
     FamilyService familyService;
 
@@ -30,10 +27,10 @@ class InviteRedemptionTest {
 
     @Test
     void redeemingAValidInviteAcceptsTheMembership() {
-        Persona admin = personaRepository.save(new Persona("admin", "11111111A", FRONT, BACK));
+        Persona admin = personaRepository.save(new Persona("admin", "11111111A", "front-key", "back-key"));
         Family family = familyService.createFamily(admin, "Familia García");
         Invite invite = familyService.issueInvite(family);
-        Persona invitee = personaRepository.save(new Persona("member", "22222222B", FRONT, BACK));
+        Persona invitee = personaRepository.save(new Persona("member", "22222222B", "front-key", "back-key"));
 
         Membership membership = familyService.redeemInvite(invite.getCode(), invitee);
 
@@ -44,25 +41,25 @@ class InviteRedemptionTest {
 
     @Test
     void acceptingAnInviteGrantsConsentSoFamilyMembersCanSeeTheDniNumberAndPhotos() {
-        Persona admin = personaRepository.save(new Persona("admin", "11111111A", FRONT, BACK));
+        Persona admin = personaRepository.save(new Persona("admin", "11111111A", "front-key", "back-key"));
         Family family = familyService.createFamily(admin, "Familia García");
         Invite invite = familyService.issueInvite(family);
-        Persona invitee = personaRepository.save(new Persona("member", "22222222B", FRONT, BACK));
+        Persona invitee = personaRepository.save(new Persona("member", "22222222B", "front-key", "back-key"));
 
         familyService.redeemInvite(invite.getCode(), invitee);
 
         Optional<Dni> visible = familyService.visibleDni(family, admin, invitee);
         assertThat(visible).isPresent();
         assertThat(visible.get().number()).isEqualTo("22222222B");
-        assertThat(visible.get().frontPhoto()).isEqualTo(FRONT);
-        assertThat(visible.get().backPhoto()).isEqualTo(BACK);
+        assertThat(visible.get().frontPhotoKey()).isEqualTo("front-key");
+        assertThat(visible.get().backPhotoKey()).isEqualTo("back-key");
     }
 
     @Test
     void redeemingAnExpiredInviteIsRejected() {
-        Persona admin = personaRepository.save(new Persona("admin", "11111111A", FRONT, BACK));
+        Persona admin = personaRepository.save(new Persona("admin", "11111111A", "front-key", "back-key"));
         Family family = familyService.createFamily(admin, "Familia García");
-        Persona invitee = personaRepository.save(new Persona("member", "22222222B", FRONT, BACK));
+        Persona invitee = personaRepository.save(new Persona("member", "22222222B", "front-key", "back-key"));
         Invite expired = inviteRepository.save(new Invite("EXPIRY", family, Instant.now().minusSeconds(60)));
 
         assertThatThrownBy(() -> familyService.redeemInvite(expired.getCode(), invitee))
@@ -71,11 +68,11 @@ class InviteRedemptionTest {
 
     @Test
     void anInviteCanOnlyBeRedeemedOnce() {
-        Persona admin = personaRepository.save(new Persona("admin", "11111111A", FRONT, BACK));
+        Persona admin = personaRepository.save(new Persona("admin", "11111111A", "front-key", "back-key"));
         Family family = familyService.createFamily(admin, "Familia García");
         Invite invite = familyService.issueInvite(family);
-        Persona first = personaRepository.save(new Persona("member", "22222222B", FRONT, BACK));
-        Persona second = personaRepository.save(new Persona("carol", "33333333C", FRONT, BACK));
+        Persona first = personaRepository.save(new Persona("member", "22222222B", "front-key", "back-key"));
+        Persona second = personaRepository.save(new Persona("carol", "33333333C", "front-key", "back-key"));
         familyService.redeemInvite(invite.getCode(), first);
 
         assertThatThrownBy(() -> familyService.redeemInvite(invite.getCode(), second))
@@ -84,34 +81,34 @@ class InviteRedemptionTest {
 
     @Test
     void theCreatorIsVisibleToOtherFamilyMembers() {
-        Persona admin = personaRepository.save(new Persona("admin", "11111111A", FRONT, BACK));
+        Persona admin = personaRepository.save(new Persona("admin", "11111111A", "front-key", "back-key"));
         Family family = familyService.createFamily(admin, "Familia García");
         Invite invite = familyService.issueInvite(family);
-        Persona invitee = personaRepository.save(new Persona("member", "22222222B", FRONT, BACK));
+        Persona invitee = personaRepository.save(new Persona("member", "22222222B", "front-key", "back-key"));
         familyService.redeemInvite(invite.getCode(), invitee);
 
         Optional<Dni> visible = familyService.visibleDni(family, invitee, admin);
         assertThat(visible).isPresent();
         assertThat(visible.get().number()).isEqualTo("11111111A");
-        assertThat(visible.get().frontPhoto()).isEqualTo(FRONT);
-        assertThat(visible.get().backPhoto()).isEqualTo(BACK);
+        assertThat(visible.get().frontPhotoKey()).isEqualTo("front-key");
+        assertThat(visible.get().backPhotoKey()).isEqualTo("back-key");
     }
 
     @Test
     void aPersonaOutsideTheFamilyCannotSeeItsMembers() {
-        Persona admin = personaRepository.save(new Persona("admin", "11111111A", FRONT, BACK));
+        Persona admin = personaRepository.save(new Persona("admin", "11111111A", "front-key", "back-key"));
         Family family = familyService.createFamily(admin, "Familia García");
         Invite invite = familyService.issueInvite(family);
-        Persona invitee = personaRepository.save(new Persona("member", "22222222B", FRONT, BACK));
+        Persona invitee = personaRepository.save(new Persona("member", "22222222B", "front-key", "back-key"));
         familyService.redeemInvite(invite.getCode(), invitee);
-        Persona outsider = personaRepository.save(new Persona("outsider", "44444444D", FRONT, BACK));
+        Persona outsider = personaRepository.save(new Persona("outsider", "44444444D", "front-key", "back-key"));
 
         assertThat(familyService.visibleDni(family, outsider, invitee)).isEmpty();
     }
 
     @Test
     void redeemingAnUnknownInviteIsRejected() {
-        Persona invitee = personaRepository.save(new Persona("member", "22222222B", FRONT, BACK));
+        Persona invitee = personaRepository.save(new Persona("member", "22222222B", "front-key", "back-key"));
 
         assertThatThrownBy(() -> familyService.redeemInvite("ZZZZZZ", invitee))
                 .isInstanceOf(NoSuchElementException.class);
@@ -119,12 +116,12 @@ class InviteRedemptionTest {
 
     @Test
     void consentIsScopedToTheFamilyWhereItWasGranted() {
-        Persona alice = personaRepository.save(new Persona("admin", "11111111A", FRONT, BACK));
+        Persona alice = personaRepository.save(new Persona("admin", "11111111A", "front-key", "back-key"));
         Family familyA = familyService.createFamily(alice, "Familia A");
         Invite inviteA = familyService.issueInvite(familyA);
-        Persona bob = personaRepository.save(new Persona("member", "22222222B", FRONT, BACK));
+        Persona bob = personaRepository.save(new Persona("member", "22222222B", "front-key", "back-key"));
         familyService.redeemInvite(inviteA.getCode(), bob);
-        Persona carol = personaRepository.save(new Persona("carol", "33333333C", FRONT, BACK));
+        Persona carol = personaRepository.save(new Persona("carol", "33333333C", "front-key", "back-key"));
         Family familyB = familyService.createFamily(carol, "Familia B");
 
         assertThat(familyService.visibleDni(familyA, alice, bob)).isPresent();

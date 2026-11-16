@@ -9,6 +9,7 @@ import albertmnz07.demo.family.Persona;
 import albertmnz07.demo.family.PersonaService;
 import albertmnz07.demo.family.error.ForbiddenException;
 import albertmnz07.demo.family.error.NotFoundException;
+import albertmnz07.demo.family.photo.PhotoStore;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -31,10 +32,12 @@ public class FamilyController {
 
     private final FamilyService families;
     private final PersonaService personas;
+    private final PhotoStore photos;
 
-    public FamilyController(FamilyService families, PersonaService personas) {
+    public FamilyController(FamilyService families, PersonaService personas, PhotoStore photos) {
         this.families = families;
         this.personas = personas;
+        this.photos = photos;
     }
 
     @PostMapping("/api/v1/families")
@@ -112,14 +115,18 @@ public class FamilyController {
     public ResponseEntity<byte[]> frontPhoto(@ActingPersona Persona viewer, @PathVariable UUID familyId,
             @PathVariable UUID personaId) {
         Dni dni = requireVisibleDni(familyId, viewer, personaId);
-        return PhotoResponses.of(dni.frontPhoto(), dni.frontPhotoContentType());
+        return photos.get(dni.frontPhotoKey())
+                .map(photo -> PhotoResponses.of(photo, dni.frontPhotoContentType()))
+                .orElseThrow(() -> new NotFoundException("Front photo not found"));
     }
 
     @GetMapping("/api/v1/families/{familyId}/members/{personaId}/dni/back")
     public ResponseEntity<byte[]> backPhoto(@ActingPersona Persona viewer, @PathVariable UUID familyId,
             @PathVariable UUID personaId) {
         Dni dni = requireVisibleDni(familyId, viewer, personaId);
-        return PhotoResponses.of(dni.backPhoto(), dni.backPhotoContentType());
+        return photos.get(dni.backPhotoKey())
+                .map(photo -> PhotoResponses.of(photo, dni.backPhotoContentType()))
+                .orElseThrow(() -> new NotFoundException("Back photo not found"));
     }
 
     private Dni requireVisibleDni(UUID familyId, Persona viewer, UUID personaId) {

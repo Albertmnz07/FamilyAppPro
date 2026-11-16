@@ -24,9 +24,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class InviteConcurrencyTest {
 
-    private static final byte[] FRONT = {1, 2, 3};
-    private static final byte[] BACK = {4, 5, 6};
-
     @Autowired
     FamilyService familyService;
 
@@ -56,11 +53,11 @@ class InviteConcurrencyTest {
 
     @Test
     void concurrentRedemptionsOfTheSameInviteAcceptExactlyOnePersona() throws Exception {
-        Persona admin = personaRepository.save(new Persona("admin", "11111111A", FRONT, BACK));
+        Persona admin = personaRepository.save(new Persona("admin", "11111111A", "front-key", "back-key"));
         Family family = familyService.createFamily(admin, "Familia García");
         Invite invite = familyService.issueInvite(family);
-        Persona first = personaRepository.save(new Persona("member", "22222222B", FRONT, BACK));
-        Persona second = personaRepository.save(new Persona("carol", "33333333C", FRONT, BACK));
+        Persona first = personaRepository.save(new Persona("member", "22222222B", "front-key", "back-key"));
+        Persona second = personaRepository.save(new Persona("carol", "33333333C", "front-key", "back-key"));
 
         CountDownLatch start = new CountDownLatch(1);
         ExecutorService executor = Executors.newFixedThreadPool(2);

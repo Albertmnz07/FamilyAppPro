@@ -5,6 +5,7 @@ import albertmnz07.demo.family.error.DuplicateDniException;
 import albertmnz07.demo.family.error.DuplicateUsernameException;
 import albertmnz07.demo.family.error.NotFoundException;
 import albertmnz07.demo.family.error.UnsupportedPhotoTypeException;
+import albertmnz07.demo.family.photo.PhotoStore;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.Locale;
@@ -21,10 +22,12 @@ public class PersonaService {
     private static final String USERNAME_PATTERN = "[a-z0-9._-]{3,30}";
 
     private final PersonaRepository personas;
+    private final PhotoStore photos;
     private final PasswordHasher passwordHasher = new PasswordHasher();
 
-    public PersonaService(PersonaRepository personas) {
+    public PersonaService(PersonaRepository personas, PhotoStore photos) {
         this.personas = personas;
+        this.photos = photos;
     }
 
     @Transactional
@@ -41,7 +44,9 @@ public class PersonaService {
         }
         validatePhoto(frontPhoto, frontPhotoContentType, "front");
         validatePhoto(backPhoto, backPhotoContentType, "back");
-        return personas.save(new Persona(username, dni, frontPhoto, frontPhotoContentType, backPhoto,
+        String frontPhotoKey = photos.put(frontPhoto);
+        String backPhotoKey = photos.put(backPhoto);
+        return personas.save(new Persona(username, dni, frontPhotoKey, frontPhotoContentType, backPhotoKey,
                 backPhotoContentType, passwordHasher.hash(password)));
     }
 

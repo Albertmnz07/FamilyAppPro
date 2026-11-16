@@ -2,8 +2,8 @@ package albertmnz07.demo.family;
 
 public record Dni(
         String number,
-        byte[] frontPhoto,
+        String frontPhotoKey,
         String frontPhotoContentType,
-        byte[] backPhoto,
+        String backPhotoKey,
         String backPhotoContentType) {
 }

@@ -23,14 +23,14 @@ public class Persona {
     @Column(name = "password_hash")
     private String passwordHash;
 
-    @Column(nullable = false, length = 1_048_576)
-    private byte[] frontPhoto;
+    @Column(name = "front_photo_key")
+    private String frontPhotoKey;
 
     @Column(nullable = false)
     private String frontPhotoContentType;
 
-    @Column(nullable = false, length = 1_048_576)
-    private byte[] backPhoto;
+    @Column(name = "back_photo_key")
+    private String backPhotoKey;
 
     @Column(nullable = false)
     private String backPhotoContentType;
@@ -38,17 +38,17 @@ public class Persona {
     protected Persona() {
     }
 
-    public Persona(String username, String dni, byte[] frontPhoto, byte[] backPhoto) {
-        this(username, dni, frontPhoto, "image/jpeg", backPhoto, "image/jpeg", null);
+    public Persona(String username, String dni, String frontPhotoKey, String backPhotoKey) {
+        this(username, dni, frontPhotoKey, "image/jpeg", backPhotoKey, "image/jpeg", null);
     }
 
-    public Persona(String username, String dni, byte[] frontPhoto, String frontPhotoContentType, byte[] backPhoto,
-            String backPhotoContentType, String passwordHash) {
+    public Persona(String username, String dni, String frontPhotoKey, String frontPhotoContentType,
+            String backPhotoKey, String backPhotoContentType, String passwordHash) {
         this.username = username;
         this.dni = dni;
-        this.frontPhoto = frontPhoto;
+        this.frontPhotoKey = frontPhotoKey;
         this.frontPhotoContentType = frontPhotoContentType;
-        this.backPhoto = backPhoto;
+        this.backPhotoKey = backPhotoKey;
         this.backPhotoContentType = backPhotoContentType;
         this.passwordHash = passwordHash;
     }
@@ -69,16 +69,16 @@ public class Persona {
         return passwordHash;
     }
 
-    public byte[] getFrontPhoto() {
-        return frontPhoto;
+    public String getFrontPhotoKey() {
+        return frontPhotoKey;
     }
 
     public String getFrontPhotoContentType() {
         return frontPhotoContentType;
     }
 
-    public byte[] getBackPhoto() {
-        return backPhoto;
+    public String getBackPhotoKey() {
+        return backPhotoKey;
     }
 
     public String getBackPhotoContentType() {
@@ -86,6 +86,6 @@ public class Persona {
     }
 
     public Dni dniEntity() {
-        return new Dni(dni, frontPhoto, frontPhotoContentType, backPhoto, backPhotoContentType);
+        return new Dni(dni, frontPhotoKey, frontPhotoContentType, backPhotoKey, backPhotoContentType);
     }
 }

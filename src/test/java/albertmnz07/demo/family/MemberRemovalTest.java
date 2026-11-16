@@ -12,9 +12,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Import({FamilyService.class, InviteCodeGenerator.class})
 class MemberRemovalTest {
 
-    private static final byte[] FRONT = {1, 2, 3};
-    private static final byte[] BACK = {4, 5, 6};
-
     @Autowired
     FamilyService familyService;
 
@@ -77,7 +74,7 @@ class MemberRemovalTest {
     }
 
     private Persona savePersona(String dni) {
-        return personaRepository.save(new Persona("user-" + dni.toLowerCase(java.util.Locale.ROOT), dni, FRONT, BACK));
+        return personaRepository.save(new Persona("user-" + dni.toLowerCase(java.util.Locale.ROOT), dni, "front-key", "back-key"));
     }
 
     private void redeemInto(Family family, Persona persona) {

@@ -25,6 +25,8 @@ The application expects database `familyapp` with user `familyapp` / password `f
 - OpenAPI description: `http://localhost:8080/v3/api-docs`
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 
+DNI photos are stored outside PostgreSQL, in the local photo store rooted at `./data/photos` (override with `PHOTOS_DIR`); the database keeps only the photo keys.
+
 ## Authentication
 
 A persona registers with a `username`, a `dni`, a `password` (8-100 characters) and the front/back photos. Login exchanges the credentials for a bearer token:

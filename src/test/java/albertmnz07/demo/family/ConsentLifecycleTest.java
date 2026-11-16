@@ -11,9 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Import({FamilyService.class, InviteCodeGenerator.class})
 class ConsentLifecycleTest {
 
-    private static final byte[] FRONT = {1, 2, 3};
-    private static final byte[] BACK = {4, 5, 6};
-
     @Autowired
     FamilyService familyService;
 
@@ -22,10 +19,10 @@ class ConsentLifecycleTest {
 
     @Test
     void revokingConsentImmediatelyDropsVisibility() {
-        Persona admin = personaRepository.save(new Persona("admin", "11111111A", FRONT, BACK));
+        Persona admin = personaRepository.save(new Persona("admin", "11111111A", "front-key", "back-key"));
         Family family = familyService.createFamily(admin, "Familia García");
         Invite invite = familyService.issueInvite(family);
-        Persona member = personaRepository.save(new Persona("member", "22222222B", FRONT, BACK));
+        Persona member = personaRepository.save(new Persona("member", "22222222B", "front-key", "back-key"));
         familyService.redeemInvite(invite.getCode(), member);
         assertThat(familyService.visibleDni(family, admin, member)).isPresent();
 
@@ -36,10 +33,10 @@ class ConsentLifecycleTest {
 
     @Test
     void reAcceptanceReEstablishesConsent() {
-        Persona admin = personaRepository.save(new Persona("admin", "11111111A", FRONT, BACK));
+        Persona admin = personaRepository.save(new Persona("admin", "11111111A", "front-key", "back-key"));
         Family family = familyService.createFamily(admin, "Familia García");
         Invite invite = familyService.issueInvite(family);
-        Persona member = personaRepository.save(new Persona("member", "22222222B", FRONT, BACK));
+        Persona member = personaRepository.save(new Persona("member", "22222222B", "front-key", "back-key"));
         familyService.redeemInvite(invite.getCode(), member);
         familyService.revokeConsent(family, member);
         assertThat(familyService.visibleDni(family, admin, member)).isEmpty();
@@ -52,12 +49,12 @@ class ConsentLifecycleTest {
 
     @Test
     void consentAndVisibilityArePerFamily() {
-        Persona alice = personaRepository.save(new Persona("admin", "11111111A", FRONT, BACK));
+        Persona alice = personaRepository.save(new Persona("admin", "11111111A", "front-key", "back-key"));
         Family familyA = familyService.createFamily(alice, "Familia A");
         Invite inviteA = familyService.issueInvite(familyA);
-        Persona bob = personaRepository.save(new Persona("member", "22222222B", FRONT, BACK));
+        Persona bob = personaRepository.save(new Persona("member", "22222222B", "front-key", "back-key"));
         familyService.redeemInvite(inviteA.getCode(), bob);
-        Persona carol = personaRepository.save(new Persona("carol", "33333333C", FRONT, BACK));
+        Persona carol = personaRepository.save(new Persona("carol", "33333333C", "front-key", "back-key"));
         Family familyB = familyService.createFamily(carol, "Familia B");
         Invite inviteB = familyService.issueInvite(familyB);
         familyService.redeemInvite(inviteB.getCode(), bob);
@@ -73,10 +70,10 @@ class ConsentLifecycleTest {
 
     @Test
     void consentIsWithheldUntilTheInviteIsAccepted() {
-        Persona alice = personaRepository.save(new Persona("admin", "11111111A", FRONT, BACK));
+        Persona alice = personaRepository.save(new Persona("admin", "11111111A", "front-key", "back-key"));
         Family family = familyService.createFamily(alice, "Familia A");
         Invite invite = familyService.issueInvite(family);
-        Persona bob = personaRepository.save(new Persona("member", "22222222B", FRONT, BACK));
+        Persona bob = personaRepository.save(new Persona("member", "22222222B", "front-key", "back-key"));
 
         assertThat(familyService.visibleDni(family, alice, bob)).isEmpty();
 
