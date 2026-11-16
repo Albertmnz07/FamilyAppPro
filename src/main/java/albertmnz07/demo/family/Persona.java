@@ -20,6 +20,9 @@ public class Persona {
     @Column(nullable = false, unique = true)
     private String dni;
 
+    @Column(name = "password_hash")
+    private String passwordHash;
+
     @Column(nullable = false, length = 1_048_576)
     private byte[] frontPhoto;
 
@@ -36,17 +39,18 @@ public class Persona {
     }
 
     public Persona(String username, String dni, byte[] frontPhoto, byte[] backPhoto) {
-        this(username, dni, frontPhoto, "image/jpeg", backPhoto, "image/jpeg");
+        this(username, dni, frontPhoto, "image/jpeg", backPhoto, "image/jpeg", null);
     }
 
     public Persona(String username, String dni, byte[] frontPhoto, String frontPhotoContentType, byte[] backPhoto,
-            String backPhotoContentType) {
+            String backPhotoContentType, String passwordHash) {
         this.username = username;
         this.dni = dni;
         this.frontPhoto = frontPhoto;
         this.frontPhotoContentType = frontPhotoContentType;
         this.backPhoto = backPhoto;
         this.backPhotoContentType = backPhotoContentType;
+        this.passwordHash = passwordHash;
     }
 
     public UUID getId() {
@@ -59,6 +63,10 @@ public class Persona {
 
     public String getDni() {
         return dni;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
     }
 
     public byte[] getFrontPhoto() {

@@ -1,5 +1,6 @@
 package albertmnz07.demo.family;
 
+import albertmnz07.demo.family.auth.PasswordHasher;
 import albertmnz07.demo.family.error.DuplicateDniException;
 import albertmnz07.demo.family.error.DuplicateUsernameException;
 import albertmnz07.demo.family.error.NotFoundException;
@@ -15,19 +16,23 @@ public class PersonaService {
 
     private static final Set<String> ALLOWED_PHOTO_TYPES = Set.of("image/jpeg", "image/png");
     private static final int MAX_PHOTO_BYTES = 1_048_576;
+    private static final int MIN_PASSWORD_LENGTH = 8;
+    private static final int MAX_PASSWORD_LENGTH = 100;
     private static final String USERNAME_PATTERN = "[a-z0-9._-]{3,30}";
 
     private final PersonaRepository personas;
+    private final PasswordHasher passwordHasher = new PasswordHasher();
 
     public PersonaService(PersonaRepository personas) {
         this.personas = personas;
     }
 
     @Transactional
-    public Persona register(String rawUsername, String rawDni, byte[] frontPhoto, String frontPhotoContentType,
-            byte[] backPhoto, String backPhotoContentType) {
+    public Persona register(String rawUsername, String rawDni, String password, byte[] frontPhoto,
+            String frontPhotoContentType, byte[] backPhoto, String backPhotoContentType) {
         String username = normalizeUsername(rawUsername);
         String dni = normalizeDni(rawDni);
+        validatePassword(password);
         if (personas.existsByUsername(username)) {
             throw new DuplicateUsernameException("Username already taken: " + username);
         }
@@ -37,7 +42,7 @@ public class PersonaService {
         validatePhoto(frontPhoto, frontPhotoContentType, "front");
         validatePhoto(backPhoto, backPhotoContentType, "back");
         return personas.save(new Persona(username, dni, frontPhoto, frontPhotoContentType, backPhoto,
-                backPhotoContentType));
+                backPhotoContentType, passwordHasher.hash(password)));
     }
 
     public Persona find(UUID id) {
@@ -56,6 +61,12 @@ public class PersonaService {
                     "The username must be 3-30 characters: letters, digits, dots, underscores or hyphens");
         }
         return username;
+    }
+
+    private void validatePassword(String password) {
+        if (password == null || password.length() < MIN_PASSWORD_LENGTH || password.length() > MAX_PASSWORD_LENGTH) {
+            throw new IllegalArgumentException("The password must be 8-100 characters");
+        }
     }
 
     private void validatePhoto(byte[] photo, String contentType, String side) {

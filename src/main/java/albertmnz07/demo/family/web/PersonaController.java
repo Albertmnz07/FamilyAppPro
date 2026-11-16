@@ -6,6 +6,7 @@ import albertmnz07.demo.family.validation.ValidDni;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -39,10 +40,14 @@ public class PersonaController {
                     regexp = "[A-Za-z0-9._-]{3,30}",
                     message = "must be 3-30 characters: letters, digits, dots, underscores or hyphens") String username,
             @RequestParam @NotBlank @ValidDni String dni,
+            @RequestParam @NotBlank @Size(
+                    min = 8,
+                    max = 100,
+                    message = "must be 8-100 characters") String password,
             @RequestPart("frontPhoto") MultipartFile frontPhoto,
             @RequestPart("backPhoto") MultipartFile backPhoto) throws IOException {
-        Persona persona = personas.register(username, dni, frontPhoto.getBytes(), frontPhoto.getContentType(),
-                backPhoto.getBytes(), backPhoto.getContentType());
+        Persona persona = personas.register(username, dni, password, frontPhoto.getBytes(),
+                frontPhoto.getContentType(), backPhoto.getBytes(), backPhoto.getContentType());
         return PersonaResponse.of(persona);
     }
 

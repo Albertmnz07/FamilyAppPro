@@ -25,29 +25,38 @@ The application expects database `familyapp` with user `familyapp` / password `f
 - OpenAPI description: `http://localhost:8080/v3/api-docs`
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 
-## Acting persona
+## Authentication
 
-There is no authentication yet. Every request identifies the acting persona with the header:
+A persona registers with a `username`, a `dni`, a `password` (8-100 characters) and the front/back photos. Login exchanges the credentials for a bearer token:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"<username>","password":"<password>"}'
+```
+
+Every protected request then carries the token:
 
 ```
-X-Persona-Id: <persona-uuid>
+Authorization: Bearer <token>
 ```
 
-A missing, malformed or unknown value returns `401`. CORS for the future front-end defaults to `http://localhost:3000` and `http://localhost:5173` (override with `CORS_ALLOWED_ORIGINS`).
+A missing, malformed or unknown token returns `401`. Tokens expire after seven days. CORS for the front-end defaults to `http://localhost:3000` and `http://localhost:5173` (override with `CORS_ALLOWED_ORIGINS`).
 
 ## Endpoints
 
 | Method | Path | Who |
 | --- | --- | --- |
-| `POST` | `/api/v1/personas` (multipart: `username`, `dni`, `frontPhoto`, `backPhoto`) | anyone |
-| `GET` | `/api/v1/personas/me` | acting persona |
-| `GET` | `/api/v1/personas/me/photos/{front,back}` | acting persona |
-| `POST` | `/api/v1/families` | acting persona |
-| `GET` | `/api/v1/me/families` | acting persona |
+| `POST` | `/api/v1/personas` (multipart: `username`, `dni`, `password`, `frontPhoto`, `backPhoto`) | anyone |
+| `POST` | `/api/v1/auth/login` (`username`, `password`) | anyone |
+| `GET` | `/api/v1/personas/me` | authenticated persona |
+| `GET` | `/api/v1/personas/me/photos/{front,back}` | authenticated persona |
+| `POST` | `/api/v1/families` | authenticated persona |
+| `GET` | `/api/v1/me/families` | authenticated persona |
 | `GET` | `/api/v1/families/{id}` | accepted member |
 | `GET` | `/api/v1/families/{id}/members` | accepted member |
 | `POST` | `/api/v1/families/{id}/invites` | admin |
-| `POST` | `/api/v1/invites/{code}/redemption` | any registered persona |
+| `POST` | `/api/v1/invites/{code}/redemption` | authenticated persona |
 | `DELETE` | `/api/v1/families/{id}/members/{personaId}` | admin |
 | `DELETE` | `/api/v1/families/{id}/members/{personaId}/consent` | that persona only |
 | `GET` | `/api/v1/families/{id}/members/{personaId}/dni` | accepted member, consent in force |
