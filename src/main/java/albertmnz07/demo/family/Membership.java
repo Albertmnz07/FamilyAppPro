@@ -19,7 +19,6 @@ import java.util.UUID;
 public class Membership {
 
     public enum Status {
-        INVITED,
         ACCEPTED,
         REMOVED
     }
@@ -44,7 +43,7 @@ public class Membership {
     public Membership(Family family, Persona persona) {
         this.family = family;
         this.persona = persona;
-        this.status = Status.INVITED;
+        this.status = Status.ACCEPTED;
     }
 
     public void accept() {

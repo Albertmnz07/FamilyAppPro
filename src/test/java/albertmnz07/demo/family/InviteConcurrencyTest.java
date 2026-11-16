@@ -56,11 +56,11 @@ class InviteConcurrencyTest {
 
     @Test
     void concurrentRedemptionsOfTheSameInviteAcceptExactlyOnePersona() throws Exception {
-        Persona admin = personaRepository.save(new Persona("11111111A", FRONT, BACK));
+        Persona admin = personaRepository.save(new Persona("admin", "11111111A", FRONT, BACK));
         Family family = familyService.createFamily(admin, "Familia García");
         Invite invite = familyService.issueInvite(family);
-        Persona first = personaRepository.save(new Persona("22222222B", FRONT, BACK));
-        Persona second = personaRepository.save(new Persona("33333333C", FRONT, BACK));
+        Persona first = personaRepository.save(new Persona("member", "22222222B", FRONT, BACK));
+        Persona second = personaRepository.save(new Persona("carol", "33333333C", FRONT, BACK));
 
         CountDownLatch start = new CountDownLatch(1);
         ExecutorService executor = Executors.newFixedThreadPool(2);

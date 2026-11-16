@@ -25,7 +25,7 @@ class FamilyServiceTest {
 
     @Test
     void creatingAFamilyPersistsItWithTheCreatorAsAdmin() {
-        Persona creator = personaRepository.save(new Persona("12345678Z", new byte[]{1}, new byte[]{2}));
+        Persona creator = personaRepository.save(new Persona("creator", "12345678Z", new byte[]{1}, new byte[]{2}));
 
         Family family = familyService.createFamily(creator, "Familia García");
 
@@ -36,7 +36,7 @@ class FamilyServiceTest {
 
     @Test
     void issuingAnInviteCreatesASixCharacterAlphanumericCodeExpiringInSevenDays() {
-        Persona creator = personaRepository.save(new Persona("12345678Z", new byte[]{1}, new byte[]{2}));
+        Persona creator = personaRepository.save(new Persona("creator", "12345678Z", new byte[]{1}, new byte[]{2}));
         Family family = familyService.createFamily(creator, null);
         Instant before = Instant.now();
 

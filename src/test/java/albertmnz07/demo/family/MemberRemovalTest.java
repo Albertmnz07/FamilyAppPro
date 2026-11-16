@@ -77,7 +77,7 @@ class MemberRemovalTest {
     }
 
     private Persona savePersona(String dni) {
-        return personaRepository.save(new Persona(dni, FRONT, BACK));
+        return personaRepository.save(new Persona("user-" + dni.toLowerCase(java.util.Locale.ROOT), dni, FRONT, BACK));
     }
 
     private void redeemInto(Family family, Persona persona) {

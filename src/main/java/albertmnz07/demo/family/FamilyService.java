@@ -1,10 +1,17 @@
 package albertmnz07.demo.family;
 
+import albertmnz07.demo.family.error.CannotRemoveAdminException;
+import albertmnz07.demo.family.error.ForbiddenException;
+import albertmnz07.demo.family.error.InviteAlreadyRedeemedException;
+import albertmnz07.demo.family.error.InviteExpiredException;
+import albertmnz07.demo.family.error.NotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.NoSuchElementException;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -39,7 +46,44 @@ public class FamilyService {
 
     public Family getFamily(UUID id) {
         return families.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Family not found: " + id));
+                .orElseThrow(() -> new NotFoundException("Family not found: " + id));
+    }
+
+    public List<Family> listFamiliesFor(Persona persona) {
+        return memberships.findByPersonaAndStatus(persona, Membership.Status.ACCEPTED).stream()
+                .map(Membership::getFamily)
+                .sorted(Comparator.comparing(Family::getName,
+                        Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                .toList();
+    }
+
+    public List<Membership> listAcceptedMembers(Family family) {
+        return memberships.findByFamilyAndStatus(family, Membership.Status.ACCEPTED).stream()
+                .sorted(Comparator.comparing(membership -> membership.getPersona().getDni(),
+                        String.CASE_INSENSITIVE_ORDER))
+                .toList();
+    }
+
+    public boolean isAcceptedMember(Family family, Persona persona) {
+        return memberships.existsByFamilyAndPersonaAndStatus(family, persona, Membership.Status.ACCEPTED);
+    }
+
+    public boolean isConsentInForce(Family family, Persona persona) {
+        return consents.findByFamilyAndPersona(family, persona)
+                .map(Consent::isInForce)
+                .orElse(false);
+    }
+
+    public void requireAcceptedMember(Family family, Persona persona) {
+        if (!isAcceptedMember(family, persona)) {
+            throw new ForbiddenException("Persona is not a member of this family");
+        }
+    }
+
+    public void requireAdmin(Family family, Persona persona) {
+        if (!family.getAdmin().getId().equals(persona.getId())) {
+            throw new ForbiddenException("Only the family admin can perform this action");
+        }
     }
 
     public Invite issueInvite(Family family) {
@@ -55,19 +99,23 @@ public class FamilyService {
 
     @Transactional
     public Membership redeemInvite(String code, Persona persona) {
-        Invite invite = invites.findByCode(code)
-                .orElseThrow(() -> new NoSuchElementException("Invite not found: " + code));
+        Invite invite = invites.findByCode(normalizeCode(code))
+                .orElseThrow(() -> new NotFoundException("Invite not found: " + code));
         Instant now = Instant.now();
         if (invite.isExpiredAt(now)) {
-            throw new IllegalStateException("Invite has expired: " + code);
+            throw new InviteExpiredException("Invite has expired: " + code);
         }
         if (invite.isRedeemed()) {
-            throw new IllegalStateException("Invite has already been redeemed: " + code);
+            throw new InviteAlreadyRedeemedException("Invite has already been redeemed: " + code);
         }
         invite.redeem(now);
         invites.save(invite);
         Membership membership = inviteMembership(invite.getFamily(), persona);
         return acceptMembership(membership, now);
+    }
+
+    private String normalizeCode(String code) {
+        return code == null ? null : code.trim().toUpperCase(Locale.ROOT);
     }
 
     private Membership inviteMembership(Family family, Persona persona) {
@@ -92,7 +140,7 @@ public class FamilyService {
     @Transactional
     public void removeMember(Family family, Persona persona) {
         if (family.getAdmin().getId().equals(persona.getId())) {
-            throw new IllegalArgumentException("Cannot remove the family admin");
+            throw new CannotRemoveAdminException("Cannot remove the family admin");
         }
         memberships.findByFamilyAndPersona(family, persona)
                 .ifPresent(membership -> {
@@ -113,15 +161,10 @@ public class FamilyService {
     }
 
     public Optional<Dni> visibleDni(Family family, Persona viewer, Persona target) {
-        boolean viewerIsMember = memberships.existsByFamilyAndPersonaAndStatus(
-                family, viewer, Membership.Status.ACCEPTED);
-        if (!viewerIsMember) {
+        if (!isAcceptedMember(family, viewer)) {
             return Optional.empty();
         }
-        boolean consentInForce = consents.findByFamilyAndPersona(family, target)
-                .map(Consent::isInForce)
-                .orElse(false);
-        if (!consentInForce) {
+        if (!isConsentInForce(family, target)) {
             return Optional.empty();
         }
         return Optional.of(target.dniEntity());
