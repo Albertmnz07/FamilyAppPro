@@ -172,6 +172,95 @@ button:focus-visible {
   color: var(--color-info-ink);
 }
 
+/* Families screen: one-dimensional rows and controls, so flexbox/grid rather
+   than fixed breakpoints; logical properties keep the spacing direction-agnostic. */
+.family-list {
+  display: grid;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0 0 1.5rem;
+  padding: 0;
+}
+
+.family-list a {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0.75rem 1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.family-list a:hover {
+  border-color: var(--color-primary);
+}
+
+.family-list a:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.empty-state {
+  display: grid;
+  gap: 1rem;
+  margin-block-end: 1.5rem;
+  padding: 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.empty-state p,
+.empty-state h2,
+.create-family h2 {
+  margin: 0;
+}
+
+.empty-state > button[type="button"],
+.pagination button,
+.form-error button {
+  font: inherit;
+  min-height: 48px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-primary);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.redeem-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-block-end: 1.5rem;
+}
+
+.pagination button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.create-family {
+  margin-block-start: 2rem;
+}
+
+.create-family h2 {
+  margin-block-end: 1rem;
+}
+
 /* Hides content visually but keeps it in the accessibility tree. */
 .visually-hidden {
   position: absolute !important;
