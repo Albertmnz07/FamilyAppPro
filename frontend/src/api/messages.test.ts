@@ -1,7 +1,15 @@
 import { fromPartial } from "@total-typescript/shoehorn";
 import { describe, expect, it } from "vitest";
-import type { ProblemDetail } from "./problem";
-import { errorMessages, loginFailedMessage, messageForProblem, networkErrorMessage } from "./messages";
+import { InvalidPageError } from "./page";
+import { ApiError, type ProblemDetail } from "./problem";
+import {
+  errorMessages,
+  loginFailedMessage,
+  messageForFailure,
+  messageForProblem,
+  networkErrorMessage,
+  unexpectedResponseMessage,
+} from "./messages";
 
 // The spec (#14) lists exactly these ProblemDetail codes; every one of them
 // must resolve to its own Spanish message instead of the generic fallback.
@@ -58,5 +66,19 @@ describe("messageForProblem", () => {
 
   it("offers a distinct message for connection failures", () => {
     expect(networkErrorMessage).toBe("No se pudo conectar con el servidor. Inténtalo de nuevo.");
+  });
+});
+
+describe("messageForFailure", () => {
+  it("reads the problem code for API failures, including the login context", () => {
+    expect(messageForFailure(new ApiError(401, { code: "unauthorized" }), "login")).toBe(loginFailedMessage);
+    expect(messageForFailure(new ApiError(403, { code: "forbidden" }))).toBe(
+      "No tienes permiso para hacer eso.",
+    );
+  });
+
+  it("does not blame the network for a malformed successful response", () => {
+    expect(messageForFailure(new InvalidPageError("no content array"))).toBe(unexpectedResponseMessage);
+    expect(messageForFailure(new TypeError("Failed to fetch"))).toBe(networkErrorMessage);
   });
 });

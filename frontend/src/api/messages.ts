@@ -1,6 +1,7 @@
 // Every failure the API can return is explained in Spanish with consistent
 // wording, mapped from the ProblemDetail `code` (spec #14, "Error mapping").
-import type { ProblemDetail } from "./problem";
+import { InvalidPageError } from "./page";
+import { isApiError, type ProblemDetail } from "./problem";
 
 export const errorMessages: Record<string, string> = {
   unauthorized: "Necesitas iniciar sesión para continuar.",
@@ -27,4 +28,13 @@ export const loginFailedMessage = "Usuario o contraseña incorrectos.";
 export function messageForProblem(problem: ProblemDetail, context?: "login"): string {
   if (context === "login" && problem.code === "unauthorized") return loginFailedMessage;
   return (problem.code !== undefined && errorMessages[problem.code]) || fallbackMessage;
+}
+
+export const unexpectedResponseMessage = "La respuesta del servidor no es válida. Inténtalo de nuevo.";
+
+/** One place that turns any failed request into the Spanish message the screens show. */
+export function messageForFailure(error: unknown, context?: "login"): string {
+  if (isApiError(error)) return messageForProblem(error.problem ?? {}, context);
+  if (error instanceof InvalidPageError) return unexpectedResponseMessage;
+  return networkErrorMessage;
 }

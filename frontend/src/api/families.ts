@@ -3,7 +3,7 @@
 // cannot express a legacy `null` family name, so these functions normalize the
 // wire shape into the strict type the screens consume.
 import type { components } from "./schema";
-import { parsePage, type Page } from "./page";
+import { InvalidPageError, parsePage, type Page } from "./page";
 import { request } from "./transport";
 
 type FamilyResponse = components["schemas"]["FamilyResponse"];
@@ -20,7 +20,7 @@ export const FAMILY_PAGE_SIZE = 20;
 
 function toFamily(payload: FamilyResponse): Family {
   if (typeof payload.id !== "string" || typeof payload.adminPersonaId !== "string") {
-    throw new Error("The family response is missing required fields");
+    throw new InvalidPageError("The family response is missing required fields");
   }
   return {
     id: payload.id,
@@ -41,13 +41,12 @@ export async function listMyFamilies(page: number, signal?: AbortSignal): Promis
   return { ...springPage, content: springPage.content.map(toFamily) };
 }
 
-export async function createFamily(name: string, signal?: AbortSignal): Promise<Family> {
+export async function createFamily(name: string): Promise<Family> {
   const payload = await request<FamilyResponse>({
     method: "POST",
     path: "/families",
     body: { name } satisfies CreateFamilyRequest,
     authorized: true,
-    signal,
   });
   return toFamily(payload);
 }

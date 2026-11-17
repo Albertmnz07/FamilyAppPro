@@ -11,10 +11,13 @@ export type Page<T> = {
   size: number;
 };
 
+/** A 200 whose body is not a Spring Page: a broken response, not a network outage. */
+export class InvalidPageError extends TypeError {}
+
 export function parsePage<T>(payload: unknown): Page<T> {
   const content = (payload as { content?: unknown } | null)?.content;
   if (!Array.isArray(content)) {
-    throw new TypeError("Expected a Spring Page response with a content array");
+    throw new InvalidPageError("Expected a Spring Page response with a content array");
   }
   const record = payload as Record<string, unknown>;
   return {

@@ -2,13 +2,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 import { createFamily, listMyFamilies } from "../api/families";
-import { messageForProblem, networkErrorMessage } from "../api/messages";
-import { isApiError } from "../api/problem";
+import { messageForFailure } from "../api/messages";
+import { isApiError, normalizeFieldErrors } from "../api/problem";
 import { useUserInvalidBridge } from "../forms/useUserInvalidBridge";
 
-function failureMessage(error: unknown): string {
-  if (isApiError(error)) return messageForProblem(error.problem ?? {});
-  return networkErrorMessage;
+const nameConstraintMessage = "Escribe un nombre de hasta 100 caracteres.";
+
+/** A server-side validation failure on `name` must mark that input, not just the page. */
+function rejectsName(error: unknown): boolean {
+  if (!isApiError(error)) return false;
+  return normalizeFieldErrors(error.problem?.errors ?? []).fieldErrors.some(({ field }) => field === "name");
 }
 
 export function FamiliesPage() {
@@ -16,7 +19,8 @@ export function FamiliesPage() {
   const queryClient = useQueryClient();
   const nameInputRef = useRef<HTMLInputElement | null>(null);
   const formErrorRef = useRef<HTMLParagraphElement | null>(null);
-  const formRef = useUserInvalidBridge();
+  // One bridge for the whole page: both forms share its single polite live region.
+  const pageRef = useUserInvalidBridge();
   const [page, setPage] = useState(0);
   const [formError, setFormError] = useState<string | null>(null);
   const familiesQuery = useQuery({
@@ -32,7 +36,20 @@ export function FamiliesPage() {
       setPage(0);
       await queryClient.invalidateQueries({ queryKey: ["families"] });
     },
-    onError: (error) => setFormError(failureMessage(error)),
+    onError: (error) => {
+      const input = nameInputRef.current;
+      if (rejectsName(error) && input) {
+        // Let the browser's validity state mark the field; the bridge then sets
+        // aria-invalid, links its Spanish error and lets focus announce it.
+        input.setCustomValidity(nameConstraintMessage);
+        input.checkValidity();
+        input.focus();
+        setFormError(null);
+      } else {
+        input?.setCustomValidity("");
+        setFormError(messageForFailure(error));
+      }
+    },
   });
 
   useEffect(() => {
@@ -42,7 +59,9 @@ export function FamiliesPage() {
   function handleRedeem(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const code = String(new FormData(event.currentTarget).get("code") ?? "");
-    navigate(`/invites/${encodeURIComponent(code.trim().toUpperCase())}`);
+    // Only keep the URL tidy. Uppercasing and normalization before the request
+    // belong to the redemption screen (spec #14, "Invite UX").
+    navigate(`/invites/${encodeURIComponent(code.trim())}`);
   }
 
   function handleCreate(event: FormEvent<HTMLFormElement>) {
@@ -54,12 +73,12 @@ export function FamiliesPage() {
   }
 
   return (
-    <section className="page">
+    <section className="page" ref={pageRef}>
       <h1>Familias</h1>
       {familiesQuery.isPending && <p role="status">Cargando familias…</p>}
       {familiesQuery.isError && (
         <p className="form-error" role="alert">
-          {failureMessage(familiesQuery.error)}
+          {messageForFailure(familiesQuery.error)}
           <button type="button" onClick={() => void familiesQuery.refetch()}>
             Reintentar
           </button>
@@ -90,11 +109,16 @@ export function FamiliesPage() {
                     name="code"
                     type="text"
                     required
+                    aria-invalid={false}
+                    data-error="invite-code-error"
                     autoCapitalize="none"
                     autoCorrect="off"
                     spellCheck={false}
                     enterKeyHint="go"
                   />
+                  <span id="invite-code-error" className="field-error">
+                    Escribe el código de invitación.
+                  </span>
                 </div>
                 <button type="submit">Canjear invitación</button>
               </form>
@@ -131,7 +155,7 @@ export function FamiliesPage() {
             {formError}
           </p>
         )}
-        <form ref={formRef} onSubmit={handleCreate} className="form" aria-labelledby="create-family-heading">
+        <form onSubmit={handleCreate} className="form" aria-labelledby="create-family-heading">
           <div className="field">
             <label htmlFor="family-name">Nombre de la familia</label>
             <input
@@ -143,9 +167,10 @@ export function FamiliesPage() {
               autoComplete="off"
               ref={nameInputRef}
               data-error="family-name-error"
+              onInputCapture={() => nameInputRef.current?.setCustomValidity("")}
             />
             <span id="family-name-error" className="field-error">
-              Escribe un nombre de hasta 100 caracteres.
+              {nameConstraintMessage}
             </span>
           </div>
           <button type="submit" disabled={createMutation.isPending}>

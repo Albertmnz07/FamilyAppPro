@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parsePage } from "./page";
+import { InvalidPageError, parsePage } from "./page";
 
 type Family = { id: string; name: string | null; adminPersonaId: string };
 
@@ -31,7 +31,7 @@ describe("parsePage", () => {
   });
 
   it("rejects payloads without a content array", () => {
-    expect(() => parsePage<Family>({ totalElements: 3 })).toThrow(TypeError);
-    expect(() => parsePage<Family>(null)).toThrow(TypeError);
+    expect(() => parsePage<Family>({ totalElements: 3 })).toThrow(InvalidPageError);
+    expect(() => parsePage<Family>(null)).toThrow(InvalidPageError);
   });
 });

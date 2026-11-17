@@ -14,14 +14,15 @@ type Field = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
  * `aria-describedby` only while it applies, and one polite live region per page
  * announces an error that appears when the user leaves a field. The state is
  * derived from events instead of `matches(':user-invalid')` so it also works
- * in jsdom, which never matches that selector.
+ * in jsdom, which never matches that selector. The ref may point at a whole
+ * page section to cover several forms with that one live region.
  */
-export function useUserInvalidBridge(): React.RefObject<HTMLFormElement | null> {
-  const formRef = useRef<HTMLFormElement | null>(null);
+export function useUserInvalidBridge<T extends HTMLElement = HTMLElement>(): React.RefObject<T | null> {
+  const rootRef = useRef<T | null>(null);
 
   useEffect(() => {
-    const form = formRef.current;
-    if (!form) return;
+    const root = rootRef.current;
+    if (!root) return;
 
     const announcer = document.createElement("div");
     announcer.setAttribute("aria-live", "polite");
@@ -144,25 +145,25 @@ export function useUserInvalidBridge(): React.RefObject<HTMLFormElement | null> 
     };
 
     // Start every field at aria-invalid="false".
-    form.querySelectorAll(FIELD_SELECTOR).forEach((field) => {
+    root.querySelectorAll(FIELD_SELECTOR).forEach((field) => {
       const el = field as Field;
       if (el.willValidate) applyState(el, false, false);
     });
 
-    form.addEventListener("blur", onBlur, true);
-    form.addEventListener("input", onInput);
-    form.addEventListener("change", onChange, true);
-    form.addEventListener("invalid", onInvalid, true);
+    root.addEventListener("blur", onBlur, true);
+    root.addEventListener("input", onInput);
+    root.addEventListener("change", onChange, true);
+    root.addEventListener("invalid", onInvalid, true);
 
     return () => {
       clearTimeout(announceTimer);
-      form.removeEventListener("blur", onBlur, true);
-      form.removeEventListener("input", onInput);
-      form.removeEventListener("change", onChange, true);
-      form.removeEventListener("invalid", onInvalid, true);
+      root.removeEventListener("blur", onBlur, true);
+      root.removeEventListener("input", onInput);
+      root.removeEventListener("change", onChange, true);
+      root.removeEventListener("invalid", onInvalid, true);
       announcer.remove();
     };
   }, []);
 
-  return formRef;
+  return rootRef;
 }

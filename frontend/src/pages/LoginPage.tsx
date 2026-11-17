@@ -2,8 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { login, type LoginRequest } from "../api/auth";
-import { messageForProblem, networkErrorMessage } from "../api/messages";
-import { isApiError } from "../api/problem";
+import { messageForFailure } from "../api/messages";
 import { setToken } from "../auth/token";
 import { useUserInvalidBridge } from "../forms/useUserInvalidBridge";
 
@@ -15,21 +14,12 @@ function readNotice(state: unknown): string | null {
   return null;
 }
 
-function loginErrorMessage(error: unknown): string {
-  if (isApiError(error)) {
-    // On the login screen the backend's `code` decides the message; its
-    // "unauthorized" here means rejected credentials, not a lost session.
-    return messageForProblem(error.problem ?? {}, "login");
-  }
-  return networkErrorMessage;
-}
-
 export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [formError, setFormError] = useState<string | null>(null);
   const formErrorRef = useRef<HTMLParagraphElement | null>(null);
-  const formRef = useUserInvalidBridge();
+  const formRef = useUserInvalidBridge<HTMLFormElement>();
 
   const loginMutation = useMutation({
     mutationFn: (credentials: LoginRequest) => login(credentials),
@@ -37,7 +27,9 @@ export function LoginPage() {
       setToken(session.token);
       navigate("/families", { replace: true });
     },
-    onError: (error) => setFormError(loginErrorMessage(error)),
+    // On this screen the backend's "unauthorized" means rejected credentials,
+    // not a lost session, hence the login context.
+    onError: (error) => setFormError(messageForFailure(error, "login")),
   });
 
   const notice = readNotice(location.state);

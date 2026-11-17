@@ -103,7 +103,7 @@ describe("FamiliesPage", () => {
     await user.type(await screen.findByLabelText("Código de invitación"), " ab12cd ");
     await user.click(screen.getByRole("button", { name: "Canjear invitación" }));
 
-    expect(currentPath()).toBe("/invites/AB12CD");
+    expect(currentPath()).toBe("/invites/ab12cd");
     expect(screen.getByText("pantalla de la invitación")).toBeInTheDocument();
   });
 
@@ -166,6 +166,7 @@ describe("FamiliesPage", () => {
     await user.click(screen.getByRole("button", { name: "Crear familia" }));
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(name).toHaveAttribute("aria-invalid", "true");
+    expect(name).toHaveAttribute("aria-describedby", "family-name-error");
     expect(screen.getByText("Escribe un nombre de hasta 100 caracteres.")).toBeInTheDocument();
 
     await user.type(name, "Nueva familia");
@@ -179,33 +180,53 @@ describe("FamiliesPage", () => {
     expect(postCall?.[1].headers.get("Authorization")).toBe("Bearer token-1");
   });
 
-  it("explains a rejected creation in Spanish and focuses the message", async () => {
-    const fetchMock = vi.fn().mockImplementation((_url: string, init?: RequestInit) =>
-      init?.method === "POST"
-        ? Promise.resolve(
-            jsonResponse(
-              {
-                title: "Validation failed",
-                status: 400,
-                code: "validation-failed",
-                errors: [{ field: "name", message: "must not be blank" }],
-              },
-              400,
-              "application/problem+json",
-            ),
-          )
-        : Promise.resolve(jsonResponse({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 20 })),
-    );
+  it("marks the name field for a server validation failure and clears it on edit", async () => {
+    let created = false;
+    const fetchMock = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+      if (init?.method === "POST") {
+        if (created) {
+          return Promise.resolve(jsonResponse({ id: "f3", name: "Rojas", adminPersonaId: "p1" }, 201));
+        }
+        return Promise.resolve(
+          jsonResponse(
+            {
+              title: "Validation failed",
+              status: 400,
+              code: "validation-failed",
+              errors: [{ field: "name", message: "must not be blank" }],
+            },
+            400,
+            "application/problem+json",
+          ),
+        );
+      }
+      const content = created ? [{ id: "f3", name: "Rojas", adminPersonaId: "p1" }] : [];
+      return Promise.resolve(
+        jsonResponse({ content, totalElements: content.length, totalPages: 1, number: 0, size: 20 }),
+      );
+    });
     vi.stubGlobal("fetch", fetchMock);
     const user = userEvent.setup();
     renderFamilies();
 
-    await user.type(await screen.findByLabelText("Nombre de la familia"), "   ");
+    const name = (await screen.findByLabelText("Nombre de la familia")) as HTMLInputElement;
+    await user.type(name, "   ");
     await user.click(screen.getByRole("button", { name: "Crear familia" }));
 
-    const message = await screen.findByText("Revisa los campos marcados.");
-    await waitFor(() => expect(message).toHaveFocus());
+    await waitFor(() => expect(name).toHaveAttribute("aria-invalid", "true"));
+    expect(name).toHaveFocus();
+    expect(name).toHaveAttribute("aria-describedby", "family-name-error");
+    expect(screen.getByText("Escribe un nombre de hasta 100 caracteres.")).toBeInTheDocument();
+    expect(screen.queryByText("Revisa los campos marcados.")).not.toBeInTheDocument();
     expect(screen.queryByText("must not be blank")).not.toBeInTheDocument();
+
+    await user.clear(name);
+    await user.type(name, "Rojas");
+    await waitFor(() => expect(name).toHaveAttribute("aria-invalid", "false"));
+    created = true;
+    await user.click(screen.getByRole("button", { name: "Crear familia" }));
+
+    expect(await screen.findByRole("link", { name: "Rojas" })).toBeInTheDocument();
   });
 
   it("explains a connection failure when creating a family", async () => {
@@ -224,6 +245,33 @@ describe("FamiliesPage", () => {
     await user.click(screen.getByRole("button", { name: "Crear familia" }));
 
     expect(await screen.findByText("No se pudo conectar con el servidor. Inténtalo de nuevo.")).toBeInTheDocument();
+  });
+
+  it("explains a malformed list response without blaming the network", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ unexpected: true })));
+    renderFamilies();
+
+    expect(
+      await screen.findByText("La respuesta del servidor no es válida. Inténtalo de nuevo."),
+    ).toBeInTheDocument();
+  });
+
+  it("bridges both forms with one polite live region and marks invite errors", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(jsonResponse({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 20 })),
+    );
+    const { currentPath } = renderFamilies();
+    const user = userEvent.setup();
+
+    const code = await screen.findByLabelText("Código de invitación");
+    await user.click(screen.getByRole("button", { name: "Canjear invitación" }));
+
+    expect(code).toHaveAttribute("aria-invalid", "true");
+    expect(code).toHaveAttribute("aria-describedby", "invite-code-error");
+    expect(screen.getByText("Escribe el código de invitación.")).toBeInTheDocument();
+    expect(currentPath()).toBe("/families");
+    expect(document.querySelectorAll('[aria-live="polite"]')).toHaveLength(1);
   });
 
   it("explains a failed list request in Spanish and can retry it", async () => {
