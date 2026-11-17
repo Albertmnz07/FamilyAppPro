@@ -1,9 +1,10 @@
 import { fromPartial } from "@total-typescript/shoehorn";
 import { describe, expect, it } from "vitest";
+import { jsonResponse } from "../test/http";
 import { ApiError, normalizeFieldErrors, parseProblem, type ProblemDetail } from "./problem";
 
 const problemResponse = (status: number, body: unknown): Response =>
-  new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/problem+json" } });
+  jsonResponse(body, status, "application/problem+json");
 
 describe("ApiError.fromResponse", () => {
   it("carries the status, code and detail of a ProblemDetail body", async () => {

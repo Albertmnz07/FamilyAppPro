@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { login, type LoginRequest } from "../api/auth";
-import { loginFailedMessage, messageForProblem, networkErrorMessage } from "../api/messages";
+import { messageForProblem, networkErrorMessage } from "../api/messages";
 import { isApiError } from "../api/problem";
 import { setToken } from "../auth/token";
 import { useUserInvalidBridge } from "../forms/useUserInvalidBridge";
@@ -17,9 +17,9 @@ function readNotice(state: unknown): string | null {
 
 function loginErrorMessage(error: unknown): string {
   if (isApiError(error)) {
-    // A 401 on the login call itself means wrong credentials, not an expired
-    // session; every other code maps through the shared Spanish messages.
-    return error.status === 401 ? loginFailedMessage : messageForProblem(error.problem ?? {});
+    // On the login screen the backend's `code` decides the message; its
+    // "unauthorized" here means rejected credentials, not a lost session.
+    return messageForProblem(error.problem ?? {}, "login");
   }
   return networkErrorMessage;
 }
@@ -71,7 +71,7 @@ export function LoginPage() {
       )}
       <form ref={formRef} onSubmit={handleSubmit} className="form">
         <div className="field">
-          <label htmlFor="login-username">Usuario</label>
+          <label htmlFor="login-username">Nombre de usuario</label>
           <input
             id="login-username"
             name="username"
@@ -85,7 +85,7 @@ export function LoginPage() {
             data-error="login-username-error"
           />
           <span id="login-username-error" className="field-error">
-            Escribe tu usuario.
+            Escribe tu nombre de usuario.
           </span>
         </div>
         <div className="field">

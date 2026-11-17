@@ -1,16 +1,29 @@
+import { fromPartial } from "@total-typescript/shoehorn";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router";
+import type { components } from "../api/schema";
+import type { ProblemDetail } from "../api/problem";
 import { clearToken, getToken } from "../auth/token";
+import { jsonResponse } from "../test/http";
 import { LoginPage } from "./LoginPage";
 
 const sessionExpiredNotice = "Tu sesión ha finalizado. Vuelve a iniciar sesión.";
 
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/problem+json" } });
-}
+// Fixtures typed against the generated contract so drift shows up as a type error.
+const loginResponseBody = fromPartial<components["schemas"]["LoginResponse"]>({
+  token: "token-1",
+  personaId: "p1",
+  username: "ana",
+});
+const unauthorizedBody = fromPartial<ProblemDetail>({
+  title: "Unauthorized",
+  status: 401,
+  detail: "Invalid credentials",
+  code: "unauthorized",
+});
 
 function renderLogin(options?: { state?: unknown }) {
   const queryClient = new QueryClient({
@@ -37,7 +50,7 @@ function renderLogin(options?: { state?: unknown }) {
 }
 
 async function fillCredentials(user: ReturnType<typeof userEvent.setup>) {
-  await user.type(screen.getByLabelText("Usuario"), "ana");
+  await user.type(screen.getByLabelText("Nombre de usuario"), "ana");
   await user.type(screen.getByLabelText("Contraseña"), "secret-1");
   await user.click(screen.getByRole("button", { name: "Iniciar sesión" }));
 }
@@ -52,16 +65,14 @@ describe("LoginPage", () => {
     renderLogin();
 
     expect(screen.getByRole("heading", { name: "Iniciar sesión" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Usuario")).toHaveAttribute("autocomplete", "username");
+    expect(screen.getByLabelText("Nombre de usuario")).toHaveAttribute("autocomplete", "username");
     expect(screen.getByLabelText("Contraseña")).toHaveAttribute("autocomplete", "current-password");
     expect(screen.getByLabelText("Contraseña")).toHaveAttribute("type", "password");
     expect(screen.getByRole("button", { name: "Iniciar sesión" })).toBeInTheDocument();
   });
 
   it("logs in with valid credentials and lands on /families", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      jsonResponse({ token: "token-1", personaId: "p1", username: "ana" }),
-    );
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(loginResponseBody));
     vi.stubGlobal("fetch", fetchMock);
     const user = userEvent.setup();
     const { currentPath } = renderLogin();
@@ -77,12 +88,7 @@ describe("LoginPage", () => {
   });
 
   it("explains wrong credentials in Spanish and focuses the message", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      jsonResponse(
-        { title: "Unauthorized", status: 401, detail: "Invalid credentials", code: "unauthorized" },
-        401,
-      ),
-    );
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(unauthorizedBody, 401, "application/problem+json"));
     vi.stubGlobal("fetch", fetchMock);
     const user = userEvent.setup();
     const { currentPath } = renderLogin();
@@ -104,10 +110,10 @@ describe("LoginPage", () => {
     await user.click(screen.getByRole("button", { name: "Iniciar sesión" }));
 
     expect(fetchMock).not.toHaveBeenCalled();
-    const username = screen.getByLabelText("Usuario");
+    const username = screen.getByLabelText("Nombre de usuario");
     expect(username).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByLabelText("Contraseña")).toHaveAttribute("aria-invalid", "true");
-    expect(screen.getByText("Escribe tu usuario.")).toBeInTheDocument();
+    expect(screen.getByText("Escribe tu nombre de usuario.")).toBeInTheDocument();
   });
 
   it("announces the error of a field left empty through one polite live region", async () => {
@@ -115,13 +121,15 @@ describe("LoginPage", () => {
     renderLogin();
 
     // Edit and leave the field empty: that is when the error appears.
-    const username = screen.getByLabelText("Usuario");
+    const username = screen.getByLabelText("Nombre de usuario");
     await user.type(username, "a{backspace}");
     await user.tab();
 
     expect(username).toHaveAttribute("aria-invalid", "true");
     await waitFor(() =>
-      expect(document.querySelector('[aria-live="polite"]')).toHaveTextContent("Usuario: Escribe tu usuario."),
+      expect(document.querySelector('[aria-live="polite"]')).toHaveTextContent(
+        "Nombre de usuario: Escribe tu nombre de usuario.",
+      ),
     );
   });
 
@@ -129,7 +137,7 @@ describe("LoginPage", () => {
     const user = userEvent.setup();
     renderLogin();
 
-    const username = screen.getByLabelText("Usuario");
+    const username = screen.getByLabelText("Nombre de usuario");
     await user.type(username, "a{backspace}");
     await user.tab();
     await waitFor(() => expect(username).toHaveAttribute("aria-invalid", "true"));

@@ -11,7 +11,7 @@ export const queryClient = new QueryClient({
   mutationCache: new MutationCache({ onError: handleUnauthorizedResponse }),
   defaultOptions: {
     queries: {
-      retry: (failureCount, error) => !isApiError(error) && failureCount < 2,
+      retry: (failureCount, error) => !isApiError(error) && failureCount < 1,
     },
   },
 });

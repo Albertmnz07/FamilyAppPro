@@ -21,9 +21,10 @@ const fallbackMessage = "Ha ocurrido un error inesperado. Inténtalo de nuevo.";
 
 export const networkErrorMessage = "No se pudo conectar con el servidor. Inténtalo de nuevo.";
 
-/** Wrong credentials are a 401 on the login call itself; the screen owns this wording. */
+/** On the login screen the same 401 code means rejected credentials, not a lost session. */
 export const loginFailedMessage = "Usuario o contraseña incorrectos.";
 
-export function messageForProblem(problem: ProblemDetail): string {
+export function messageForProblem(problem: ProblemDetail, context?: "login"): string {
+  if (context === "login" && problem.code === "unauthorized") return loginFailedMessage;
   return (problem.code !== undefined && errorMessages[problem.code]) || fallbackMessage;
 }

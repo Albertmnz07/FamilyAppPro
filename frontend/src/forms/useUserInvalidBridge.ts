@@ -101,51 +101,53 @@ export function useUserInvalidBridge(): React.RefObject<HTMLFormElement | null> 
     const isInvalid = (field: Field): boolean =>
       field.willValidate && !field.validity.valid && interacted.has(field) && left.has(field);
 
-    const refresh = (field: Element, announce = false): void => {
-      if (!field.matches(FIELD_SELECTOR)) return;
-      const el = field as Field;
-      if (!el.willValidate) return;
-      applyState(el, isInvalid(el), announce);
+    const fieldFrom = (event: Event): Field | undefined => {
+      const target = event.target;
+      if (!(target instanceof Element) || !target.matches(FIELD_SELECTOR)) return undefined;
+      const field = target as Field;
+      return field.willValidate ? field : undefined;
     };
 
     const onInput = (event: Event): void => {
-      const field = event.target as Element;
-      if (!field.matches(FIELD_SELECTOR)) return;
+      const field = fieldFrom(event);
+      if (!field) return;
       interacted.add(field);
       // Clear an already-flagged field as soon as its value becomes valid, but
       // never introduce errors while the user is typing.
-      if (flagged.has(field)) refresh(field);
+      if (flagged.has(field)) applyState(field, isInvalid(field), false);
     };
 
     const onBlur = (event: FocusEvent): void => {
-      const field = event.target as Element;
-      if (!field.matches(FIELD_SELECTOR)) return;
+      const field = fieldFrom(event);
+      if (!field) return;
       left.add(field);
-      if (interacted.has(field)) refresh(field, true);
+      if (interacted.has(field)) applyState(field, isInvalid(field), true);
     };
 
     const onChange = (event: Event): void => {
-      const field = event.target as Element;
-      if (!field.matches(FIELD_SELECTOR)) return;
+      const field = fieldFrom(event);
+      if (!field) return;
       interacted.add(field);
-      refresh(field, true);
+      applyState(field, isInvalid(field), true);
     };
 
     const onInvalid = (event: Event): void => {
       // A failed submit fires `invalid` on every failing field, including ones
       // the user never touched. The browser moves focus to the first invalid
       // field, whose error is then announced by focus instead of the live region.
-      const field = event.target as Element;
-      if (!field.matches(FIELD_SELECTOR)) return;
+      const field = fieldFrom(event);
+      if (!field) return;
       interacted.add(field);
       left.add(field);
       announced.add(field);
-      const el = field as Field;
-      if (el.willValidate) applyState(el, true, false);
+      applyState(field, true, false);
     };
 
     // Start every field at aria-invalid="false".
-    form.querySelectorAll(FIELD_SELECTOR).forEach((field) => refresh(field));
+    form.querySelectorAll(FIELD_SELECTOR).forEach((field) => {
+      const el = field as Field;
+      if (el.willValidate) applyState(el, false, false);
+    });
 
     form.addEventListener("blur", onBlur, true);
     form.addEventListener("input", onInput);

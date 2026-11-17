@@ -1,10 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildUrl, request } from "./transport";
 import { clearToken, setToken } from "../auth/token";
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
-}
+import { jsonResponse } from "../test/http";
 
 afterEach(() => {
   vi.unstubAllGlobals();
