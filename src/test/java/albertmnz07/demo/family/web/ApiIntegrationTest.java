@@ -455,6 +455,50 @@ class ApiIntegrationTest {
     }
 
     @Test
+    void pagingUsesTheDefaultPageZeroAndSizeTwentyWhenNoPagingParamsAreSent() throws Exception {
+        registerPersona(ADMIN_DNI);
+        for (int i = 0; i < 21; i++) {
+            createFamily(ADMIN_DNI, "Familia " + i);
+        }
+
+        mvc.perform(get("/api/v1/me/families").header(AUTH, bearer(ADMIN_DNI)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.number").value(0))
+                .andExpect(jsonPath("$.size").value(20))
+                .andExpect(jsonPath("$.content.length()").value(20))
+                .andExpect(jsonPath("$.totalElements").value(21))
+                .andExpect(jsonPath("$.totalPages").value(2));
+    }
+
+    @Test
+    void aPageSizeAboveTheCapIsClampedToTheMaximum() throws Exception {
+        registerPersona(ADMIN_DNI);
+        createFamily(ADMIN_DNI, "Familia García");
+
+        mvc.perform(get("/api/v1/me/families")
+                .header(AUTH, bearer(ADMIN_DNI))
+                .param("size", "500"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.size").value(100))
+                .andExpect(jsonPath("$.content.length()").value(1));
+    }
+
+    @Test
+    void aClientSortParameterIsIgnoredAndOrderingStaysFixedServerSide() throws Exception {
+        registerPersona(ADMIN_DNI);
+        UUID familyId = createFamily(ADMIN_DNI, "Familia García");
+        joinFamily(familyId, MEMBER_DNI);
+
+        mvc.perform(get("/api/v1/families/" + familyId + "/members")
+                .header(AUTH, bearer(ADMIN_DNI))
+                .param("sort", "dni,desc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].dni").value(MEMBER_DNI))
+                .andExpect(jsonPath("$.content[1].dni").value(ADMIN_DNI))
+                .andExpect(jsonPath("$.pageable.sort.sorted").value(false));
+    }
+
+    @Test
     void exposesTheOpenApiDescription() throws Exception {
         mvc.perform(get("/v3/api-docs"))
                 .andExpect(status().isOk())
