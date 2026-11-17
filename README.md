@@ -13,7 +13,15 @@ Local API for the family app: personas identified by DNI share their DNI entity 
 sudo -u postgres psql -f db/bootstrap.sql
 ```
 
-The application expects database `familyapp` with user `familyapp` / password `familyapp`, and creates the schema on startup (`spring.jpa.hibernate.ddl-auto=update`). Override with `DB_URL`, `DB_USERNAME` and `DB_PASSWORD` if needed.
+The application expects database `familyapp` with user `familyapp` / password `familyapp`, and applies the versioned Flyway migrations in `src/main/resources/db/migration` on startup (`spring.jpa.hibernate.ddl-auto=validate` checks the schema against the entities). A schema created earlier by `ddl-auto=update` is baselined automatically at V1. Override with `DB_URL`, `DB_USERNAME` and `DB_PASSWORD` if needed.
+
+## Schema migrations
+
+The schema is owned by the ordered migrations in `src/main/resources/db/migration`, applied by Flyway on startup; Hibernate never changes the schema, it only validates the migrated one against the entities.
+
+`V1` captures the schema that `ddl-auto=update` produced (including the legacy `front_photo`/`back_photo` bytea columns); `V2` drops those columns after the move to object storage. A database created before Flyway was adopted is baselined at V1, so it skips `V1` and receives `V2` and every later migration. To change the schema, add a migration — `V3__add_membership_status_index.sql` — and never edit one that has already been applied.
+
+The tests run the same migrations against H2 in PostgreSQL mode, so a migration that drifts from the entities fails the suite.
 
 ## Run
 
