@@ -215,9 +215,9 @@ class ApiIntegrationTest {
 
         mvc.perform(get("/api/v1/me/families").header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].id").value(familyId.toString()))
-                .andExpect(jsonPath("$[0].adminPersonaId").value(adminOf(familyId).toString()));
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].id").value(familyId.toString()))
+                .andExpect(jsonPath("$.content[0].adminPersonaId").value(adminOf(familyId).toString()));
 
         mvc.perform(get("/api/v1/families/" + familyId).header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isOk())
@@ -225,12 +225,12 @@ class ApiIntegrationTest {
 
         mvc.perform(get("/api/v1/families/" + familyId + "/members").header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].personaId").value(adminOf(familyId).toString()))
-                .andExpect(jsonPath("$[0].username").value(usernameFor(ADMIN_DNI)))
-                .andExpect(jsonPath("$[0].admin").value(true))
-                .andExpect(jsonPath("$[0].consentInForce").value(true))
-                .andExpect(jsonPath("$[0].dni").value(ADMIN_DNI));
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].personaId").value(adminOf(familyId).toString()))
+                .andExpect(jsonPath("$.content[0].username").value(usernameFor(ADMIN_DNI)))
+                .andExpect(jsonPath("$.content[0].admin").value(true))
+                .andExpect(jsonPath("$.content[0].consentInForce").value(true))
+                .andExpect(jsonPath("$.content[0].dni").value(ADMIN_DNI));
     }
 
     @Test
@@ -270,9 +270,9 @@ class ApiIntegrationTest {
 
         mvc.perform(get("/api/v1/families/" + familyId + "/members").header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].dni").value(MEMBER_DNI))
-                .andExpect(jsonPath("$[1].dni").value(ADMIN_DNI));
+                .andExpect(jsonPath("$.content.length()").value(2))
+                .andExpect(jsonPath("$.content[0].dni").value(MEMBER_DNI))
+                .andExpect(jsonPath("$.content[1].dni").value(ADMIN_DNI));
 
         mvc.perform(get("/api/v1/families/" + familyId + "/members/" + memberId + "/dni")
                 .header(AUTH, bearer(ADMIN_DNI)))
@@ -325,9 +325,9 @@ class ApiIntegrationTest {
 
         mvc.perform(get("/api/v1/families/" + familyId + "/members").header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].personaId").value(memberId.toString()))
-                .andExpect(jsonPath("$[0].consentInForce").value(false))
-                .andExpect(jsonPath("$[0].dni").value(nullValue()));
+                .andExpect(jsonPath("$.content[0].personaId").value(memberId.toString()))
+                .andExpect(jsonPath("$.content[0].consentInForce").value(false))
+                .andExpect(jsonPath("$.content[0].dni").value(nullValue()));
 
         mvc.perform(get("/api/v1/families/" + familyId + "/members/" + memberId + "/dni")
                 .header(AUTH, bearer(ADMIN_DNI)))
@@ -357,7 +357,7 @@ class ApiIntegrationTest {
 
         mvc.perform(get("/api/v1/families/" + familyId + "/members").header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1));
+                .andExpect(jsonPath("$.content.length()").value(1));
         mvc.perform(get("/api/v1/families/" + familyId).header(AUTH, bearer(MEMBER_DNI)))
                 .andExpect(status().isForbidden());
     }
@@ -416,8 +416,42 @@ class ApiIntegrationTest {
 
         mvc.perform(get("/api/v1/families/" + familyId + "/members").header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].dni").value(MEMBER_DNI))
-                .andExpect(jsonPath("$[1].dni").value(ADMIN_DNI));
+                .andExpect(jsonPath("$.content[0].dni").value(MEMBER_DNI))
+                .andExpect(jsonPath("$.content[1].dni").value(ADMIN_DNI));
+    }
+
+    @Test
+    void membersListingIsPagedAndStaysOrderedByDniWithinThePage() throws Exception {
+        registerPersona(ADMIN_DNI);
+        UUID familyId = createFamily(ADMIN_DNI, "Familia García");
+        joinFamily(familyId, MEMBER_DNI);
+
+        mvc.perform(get("/api/v1/families/" + familyId + "/members")
+                .header(AUTH, bearer(ADMIN_DNI))
+                .param("page", "1")
+                .param("size", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].dni").value(ADMIN_DNI))
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.totalPages").value(2));
+    }
+
+    @Test
+    void familyListingIsPagedAndKeepsTheNameOrderWithinThePage() throws Exception {
+        registerPersona(ADMIN_DNI);
+        createFamily(ADMIN_DNI, "Zúñiga");
+        createFamily(ADMIN_DNI, "Alfaro");
+
+        mvc.perform(get("/api/v1/me/families")
+                .header(AUTH, bearer(ADMIN_DNI))
+                .param("page", "1")
+                .param("size", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].name").value("Zúñiga"))
+                .andExpect(jsonPath("$.totalElements").value(2))
+                .andExpect(jsonPath("$.totalPages").value(2));
     }
 
     @Test

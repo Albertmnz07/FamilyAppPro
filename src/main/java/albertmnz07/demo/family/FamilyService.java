@@ -5,6 +5,9 @@ import albertmnz07.demo.family.error.ForbiddenException;
 import albertmnz07.demo.family.error.InviteAlreadyRedeemedException;
 import albertmnz07.demo.family.error.InviteExpiredException;
 import albertmnz07.demo.family.error.NotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
@@ -49,12 +52,12 @@ public class FamilyService {
                 .orElseThrow(() -> new NotFoundException("Family not found: " + id));
     }
 
-    public List<Family> listFamiliesFor(Persona persona) {
-        return memberships.findByPersonaAndStatus(persona, Membership.Status.ACCEPTED).stream()
+    public Page<Family> listFamiliesFor(Persona persona, Pageable pageable) {
+        return page(memberships.findByPersonaAndStatus(persona, Membership.Status.ACCEPTED).stream()
                 .map(Membership::getFamily)
                 .sorted(Comparator.comparing(Family::getName,
                         Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
-                .toList();
+                .toList(), pageable);
     }
 
     public List<Membership> listAcceptedMembers(Family family) {
@@ -62,6 +65,16 @@ public class FamilyService {
                 .sorted(Comparator.comparing(membership -> membership.getPersona().getDni(),
                         String.CASE_INSENSITIVE_ORDER))
                 .toList();
+    }
+
+    public Page<Membership> listAcceptedMembers(Family family, Pageable pageable) {
+        return page(listAcceptedMembers(family), pageable);
+    }
+
+    private static <T> Page<T> page(List<T> sorted, Pageable pageable) {
+        int start = (int) Math.min(pageable.getOffset(), sorted.size());
+        int end = Math.min(start + pageable.getPageSize(), sorted.size());
+        return new PageImpl<>(sorted.subList(start, end), pageable, sorted.size());
     }
 
     public boolean isAcceptedMember(Family family, Persona persona) {
