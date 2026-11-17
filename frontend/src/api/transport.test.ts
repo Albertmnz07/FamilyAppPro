@@ -57,6 +57,22 @@ describe("request", () => {
     expect(url).toBe("http://localhost:8080/api/v1/me/families?page=1&size=20");
     expect(init.body).toBeUndefined();
   });
+
+  it("sends a FormData body and lets the browser set the multipart Content-Type", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ id: "p1" }));
+    vi.stubGlobal("fetch", fetchMock);
+    const form = new FormData();
+    form.set("username", "ana");
+
+    await request({ method: "POST", path: "/personas", form, authorized: false });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://localhost:8080/api/v1/personas");
+    expect(init.method).toBe("POST");
+    expect(init.headers.get("Content-Type")).toBeNull();
+    expect(init.headers.get("Authorization")).toBeNull();
+    expect(init.body).toBe(form);
+  });
 });
 
 describe("buildUrl", () => {

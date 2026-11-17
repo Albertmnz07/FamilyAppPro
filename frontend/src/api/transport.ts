@@ -28,6 +28,11 @@ export type RequestInit = {
   query?: QueryParams;
   /** JSON body; omitted for GET/DELETE. */
   body?: unknown;
+  /**
+   * multipart/form-data body (registration). The browser sets its own
+   * Content-Type with the generated boundary, so this omits the JSON header.
+   */
+  form?: FormData;
   /** Authenticated calls carry `Authorization: Bearer`; login and registration omit it. */
   authorized?: boolean;
   signal?: AbortSignal;
@@ -41,10 +46,11 @@ export async function request<T>(options: RequestInit): Promise<T> {
     if (token) headers.set("Authorization", `Bearer ${token}`);
   }
 
+  const body = options.form ?? (options.body === undefined ? undefined : JSON.stringify(options.body));
   const response = await fetch(buildUrl(options.path, options.query), {
     method: options.method,
     headers,
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    body,
     signal: options.signal,
   });
   if (!response.ok) {
