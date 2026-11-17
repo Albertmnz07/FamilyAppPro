@@ -1,0 +1,186 @@
+/* Mobile-first, modern native CSS: custom properties, system font stack,
+   :user-invalid for error styling. No component library, no dark mode, no
+   decorative animations (spec #14, "Styling"). */
+
+:root {
+  --color-bg: #f4f3f0;
+  --color-surface: #ffffff;
+  --color-ink: #201f1c;
+  --color-ink-soft: #5f5e58;
+  --color-primary: #2f6f4f;
+  --color-primary-ink: #ffffff;
+  --color-danger: #b3261e;
+  --color-danger-surface: #fdecea;
+  --color-info-ink: #1c4a72;
+  --color-info-surface: #edf3f9;
+  --color-border: #d9d6cf;
+  --radius: 12px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.5;
+}
+
+.shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.app-name {
+  font-weight: 650;
+}
+
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  min-height: 48px;
+  margin-inline-start: -0.75rem;
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  color: inherit;
+  cursor: pointer;
+}
+
+.back-button:focus-visible,
+.field input:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.shell-main {
+  flex: 1;
+  width: 100%;
+  max-width: 40rem;
+  margin-inline: auto;
+  padding: 1rem;
+}
+
+.page h1 {
+  font-size: 1.35rem;
+  margin: 0.25rem 0 1rem;
+}
+
+.placeholder {
+  color: var(--color-ink-soft);
+}
+
+.form {
+  display: grid;
+  gap: 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.375rem;
+}
+
+.field label {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.field input {
+  font: inherit;
+  font-size: max(1rem, 1em);
+  padding: 0.75rem;
+  min-height: 48px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: inherit;
+}
+
+/* Visual error layer: applies only once the user has interacted with the
+   field; the bridge keeps aria-invalid in step with it. */
+.field input:user-invalid {
+  border-color: var(--color-danger);
+}
+
+.field-error {
+  display: none;
+  color: var(--color-danger);
+  font-size: 0.9rem;
+}
+
+.field input:user-invalid ~ .field-error {
+  display: block;
+}
+
+.form button[type="submit"] {
+  font: inherit;
+  min-height: 48px;
+  padding: 0.75rem 1rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: var(--color-primary-ink);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.form button[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.form-error {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-danger);
+  border-radius: 8px;
+  background: var(--color-danger-surface);
+  color: var(--color-danger);
+}
+
+.notice {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: var(--color-info-surface);
+  color: var(--color-info-ink);
+}
+
+/* Hides content visually but keeps it in the accessibility tree. */
+.visually-hidden {
+  position: absolute !important;
+  clip-path: inset(50%) !important;
+  overflow: hidden !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  white-space: nowrap !important;
+}
