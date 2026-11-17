@@ -12,6 +12,9 @@ import albertmnz07.demo.family.error.NotFoundException;
 import albertmnz07.demo.family.photo.PhotoStore;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -22,7 +25,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -48,10 +50,9 @@ public class FamilyController {
     }
 
     @GetMapping("/api/v1/me/families")
-    public List<FamilyResponse> mine(@ActingPersona Persona persona) {
-        return families.listFamiliesFor(persona).stream()
-                .map(FamilyResponse::of)
-                .toList();
+    public Page<FamilyResponse> mine(@ActingPersona Persona persona,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return families.listFamiliesFor(persona, pageable).map(FamilyResponse::of);
     }
 
     @GetMapping("/api/v1/families/{familyId}")
@@ -62,13 +63,13 @@ public class FamilyController {
     }
 
     @GetMapping("/api/v1/families/{familyId}/members")
-    public List<MemberResponse> members(@ActingPersona Persona viewer, @PathVariable UUID familyId) {
+    public Page<MemberResponse> members(@ActingPersona Persona viewer, @PathVariable UUID familyId,
+            @PageableDefault(size = 20) Pageable pageable) {
         Family family = families.getFamily(familyId);
         families.requireAcceptedMember(family, viewer);
-        return families.listAcceptedMembers(family).stream()
+        return families.listAcceptedMembers(family, pageable)
                 .map(membership -> MemberResponse.of(membership,
-                        families.isConsentInForce(family, membership.getPersona())))
-                .toList();
+                        families.isConsentInForce(family, membership.getPersona())));
     }
 
     @PostMapping("/api/v1/families/{familyId}/invites")
