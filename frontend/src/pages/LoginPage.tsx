@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { login, type LoginRequest } from "../api/auth";
 import { messageForFailure } from "../api/messages";
 import { setPersonaId, setToken } from "../auth/token";
@@ -99,6 +99,9 @@ export function LoginPage() {
           {loginMutation.isPending ? "Entrando…" : "Iniciar sesión"}
         </button>
       </form>
+      <p className="form-switch">
+        ¿No tienes cuenta? <Link to="/register">Crear cuenta</Link>
+      </p>
     </section>
   );
 }
