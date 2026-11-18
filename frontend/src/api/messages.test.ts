@@ -1,5 +1,6 @@
 import { fromPartial } from "@total-typescript/shoehorn";
 import { describe, expect, it } from "vitest";
+import { InvalidRedemptionError } from "./invites";
 import { InvalidPageError } from "./page";
 import { ApiError, type ProblemDetail } from "./problem";
 import {
@@ -79,6 +80,9 @@ describe("messageForFailure", () => {
 
   it("does not blame the network for a malformed successful response", () => {
     expect(messageForFailure(new InvalidPageError("no content array"))).toBe(unexpectedResponseMessage);
+    expect(messageForFailure(new InvalidRedemptionError("bad redemption"))).toBe(
+      unexpectedResponseMessage,
+    );
     expect(messageForFailure(new TypeError("Failed to fetch"))).toBe(networkErrorMessage);
   });
 });

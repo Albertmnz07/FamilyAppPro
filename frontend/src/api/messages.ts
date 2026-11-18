@@ -1,5 +1,6 @@
 // Every failure the API can return is explained in Spanish with consistent
 // wording, mapped from the ProblemDetail `code` (spec #14, "Error mapping").
+import { InvalidRedemptionError } from "./invites";
 import { InvalidDniError } from "./members";
 import { InvalidPageError } from "./page";
 import { isApiError, type ProblemDetail } from "./problem";
@@ -40,7 +41,11 @@ export const dniNotMemberMessage = "Esta persona ya no es miembro de la familia.
 /** One place that turns any failed request into the Spanish message the screens show. */
 export function messageForFailure(error: unknown, context?: "login"): string {
   if (isApiError(error)) return messageForProblem(error.problem ?? {}, context);
-  if (error instanceof InvalidPageError || error instanceof InvalidDniError) {
+  if (
+    error instanceof InvalidPageError ||
+    error instanceof InvalidDniError ||
+    error instanceof InvalidRedemptionError
+  ) {
     return unexpectedResponseMessage;
   }
   return networkErrorMessage;
