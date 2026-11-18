@@ -75,3 +75,26 @@ A missing, malformed or unknown token returns `401`. Tokens expire after seven d
 Members are listed alphabetically by DNI. Each member exposes its `username` (always) and its `dni` (`null` while that persona's consent is not in force). Errors use `application/problem+json` (RFC 9457) with a `code` property.
 
 `GET /api/v1/me/families` and `GET /api/v1/families/{id}/members` are paginated with Spring's `page`/`size` query parameters (default `page=0`, `size=20`, maximum `size=100`) and return Spring's paged JSON shape (`content`, `totalElements`, `totalPages`, `number`, `size`, …). A `size` above the maximum is clamped to `100` rather than rejected. Ordering is fixed server-side (families by name, members by DNI): the client `sort` parameter is ignored and the paged metadata reports the page as unsorted.
+
+## Front-end
+
+The React + TypeScript + Vite app lives in `frontend/` (ADR-0006). It reaches the API by absolute URL from `VITE_API_BASE_URL`, defaulting to `http://localhost:8080/api/v1`; there is no dev proxy, so development uses the CORS origins configured under [Authentication](#authentication). To run it against a backend started with `./mvnw spring-boot:run`:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Vite serves the app on `http://localhost:5173`. Override the API base URL by exporting `VITE_API_BASE_URL` before `npm run dev` or `npm run build`.
+
+### Build integration
+
+The production build is integrated into the single Spring artifact. `npm run build` (which runs `tsc -b && vite build`) emits `frontend/dist`, and the Maven `package` phase runs `npm ci` and `npm run build` in `frontend/` and copies `frontend/dist` into the jar's static resources (`target/classes/static`). One artifact then serves both the API and the app:
+
+```bash
+./mvnw package
+java -jar target/demo-0.0.1-SNAPSHOT.jar
+```
+
+Open `http://localhost:8080`: the app is served same-origin with the API, so no extra CORS configuration is needed. The npm steps are bound to `prepare-package`, after the test phase, so `./mvnw test` never needs Node; building the artifact (`package` or later) requires Node.js and npm on the build machine.

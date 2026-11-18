@@ -131,6 +131,13 @@ export function FamilyWorkspacePage() {
   const members = pageData?.content ?? [];
   const confirmation = pendingAction ? confirmationFor(pendingAction) : null;
 
+  // A removal can shrink the list below the page the user is on; fall back to
+  // the last page that still exists rather than showing an empty page. Adjusting
+  // during render (React's supported pattern) avoids a wasted empty frame.
+  if (pageData && page >= pageData.totalPages) {
+    setPage(Math.max(0, pageData.totalPages - 1));
+  }
+
   useEffect(() => {
     if (selected) dniHeadingRef.current?.focus();
   }, [selected]);
@@ -170,7 +177,11 @@ export function FamilyWorkspacePage() {
   return (
     <section className="page">
       <h1>Familia</h1>
-      {membersQuery.isPending && <p className="loading">Cargando miembros…</p>}
+      {membersQuery.isPending && (
+        <p className="loading" role="status">
+          Cargando miembros…
+        </p>
+      )}
       {membersQuery.isError && (
         <p className="form-error" role="alert">
           {messageForFailure(membersQuery.error)}
@@ -186,63 +197,69 @@ export function FamilyWorkspacePage() {
       )}
       {pageData && (
         <>
-          <div className="member-table-wrapper">
-            <table className="member-table">
-              <caption>Miembros de la familia</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Nombre de usuario</th>
-                  <th scope="col">DNI</th>
-                  <th scope="col">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {members.map((member) => (
-                  <tr key={member.personaId}>
-                    <th scope="row" data-label="Nombre de usuario">
-                      {member.username}
-                      {member.admin && <span className="badge">Admin</span>}
-                    </th>
-                    <td data-label="DNI">
-                      {member.consentInForce && member.dni ? member.dni : "Sin consentimiento"}
-                    </td>
-                    <td data-label="Acciones">
-                      <div className="row-actions">
-                        {member.consentInForce && (
-                          <button
-                            type="button"
-                            aria-label={`Ver DNI de ${member.username}`}
-                            onClick={() => setSelected(member)}
-                          >
-                            Ver DNI
-                          </button>
-                        )}
-                        {member.personaId === currentPersonaId && member.consentInForce && (
-                          <button
-                            type="button"
-                            aria-label="Revocar consentimiento"
-                            onClick={() => setPendingAction({ kind: "revoke", member })}
-                          >
-                            Revocar consentimiento
-                          </button>
-                        )}
-                        {isAdmin && member.personaId !== currentPersonaId && (
-                          <button
-                            type="button"
-                            className="danger"
-                            aria-label={`Retirar a ${member.username}`}
-                            onClick={() => setPendingAction({ kind: "remove", member })}
-                          >
-                            Retirar
-                          </button>
-                        )}
-                      </div>
-                    </td>
+          {pageData.totalElements > 0 ? (
+            <div className="member-table-wrapper">
+              <table className="member-table">
+                <caption>Miembros de la familia</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Nombre de usuario</th>
+                    <th scope="col">DNI</th>
+                    <th scope="col">Acciones</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {members.map((member) => (
+                    <tr key={member.personaId}>
+                      <th scope="row" data-label="Nombre de usuario">
+                        {member.username}
+                        {member.admin && <span className="badge">Admin</span>}
+                      </th>
+                      <td data-label="DNI">
+                        {member.consentInForce && member.dni ? member.dni : "Sin consentimiento"}
+                      </td>
+                      <td data-label="Acciones">
+                        <div className="row-actions">
+                          {member.consentInForce && (
+                            <button
+                              type="button"
+                              aria-label={`Ver DNI de ${member.username}`}
+                              onClick={() => setSelected(member)}
+                            >
+                              Ver DNI
+                            </button>
+                          )}
+                          {member.personaId === currentPersonaId && member.consentInForce && (
+                            <button
+                              type="button"
+                              aria-label="Revocar consentimiento"
+                              onClick={() => setPendingAction({ kind: "revoke", member })}
+                            >
+                              Revocar consentimiento
+                            </button>
+                          )}
+                          {isAdmin && member.personaId !== currentPersonaId && (
+                            <button
+                              type="button"
+                              className="danger"
+                              aria-label={`Retirar a ${member.username}`}
+                              onClick={() => setPendingAction({ kind: "remove", member })}
+                            >
+                              Retirar
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="empty-state">
+              <p>Esta familia todavía no tiene miembros.</p>
+            </div>
+          )}
           {pageData.totalPages > 0 && (
             <nav className="pagination" aria-label="Paginación de miembros">
               <button
@@ -313,7 +330,11 @@ export function FamilyWorkspacePage() {
           <h2 id="dni-heading" ref={dniHeadingRef} tabIndex={-1}>
             DNI de {selected.username}
           </h2>
-          {dniQuery.isPending && <p className="loading">Cargando DNI…</p>}
+          {dniQuery.isPending && (
+            <p className="loading" role="status">
+              Cargando DNI…
+            </p>
+          )}
           {dniFailure && (
             <p className="form-error" role="alert">
               {messageForDniFailure(dniFailure)}
@@ -342,7 +363,11 @@ export function FamilyWorkspacePage() {
                   </figure>
                 </div>
               ) : (
-                !dniFailure && <p className="loading">Cargando fotos…</p>
+                !dniFailure && (
+                  <p className="loading" role="status">
+                    Cargando fotos…
+                  </p>
+                )
               )}
             </>
           )}

@@ -223,6 +223,42 @@ describe("FamilyWorkspacePage", () => {
     await user.click(screen.getByRole("button", { name: "Anterior" }));
     expect(await screen.findByText("Página 1 de 2")).toBeInTheDocument();
   });
+
+  it("shows an empty state when the family has no members", async () => {
+    setPersonaId("p1");
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(routed(() => memberPage([]))));
+    renderWorkspace();
+
+    expect(await screen.findByText("Esta familia todavía no tiene miembros.")).toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+  });
+
+  it("does not call a family empty when a removal just emptied a later page", async () => {
+    setPersonaId("p1");
+    const fetchMock = vi.fn().mockImplementation(
+      routed((url) => {
+        const number = Number(new URL(url).searchParams.get("page") ?? 0);
+        // Page 1 is out of range after the last removal shrank the total, so the
+        // backend answers it with an empty content array and a smaller totalPages.
+        if (number > 0) return memberPage([], { number, totalElements: 20, totalPages: 1 });
+        return memberPage([ana], { number, totalElements: 21, totalPages: 2 });
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    renderWorkspace();
+    const user = userEvent.setup();
+
+    await screen.findByText("Página 1 de 2");
+    await user.click(screen.getByRole("button", { name: "Siguiente" }));
+
+    const requestedPages = () =>
+      fetchMock.mock.calls
+        .filter(([url]) => String(url).includes("/members?"))
+        .map(([url]) => new URL(String(url)).searchParams.get("page"));
+    await waitFor(() => expect(requestedPages()).toEqual(["0", "1", "0"]));
+    expect(screen.queryByText("Esta familia todavía no tiene miembros.")).not.toBeInTheDocument();
+    expect(await screen.findByRole("rowheader", { name: /ana/ })).toBeInTheDocument();
+  });
 });
 
 describe("FamilyWorkspacePage invite issuance", () => {
