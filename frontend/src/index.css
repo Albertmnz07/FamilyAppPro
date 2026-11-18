@@ -238,7 +238,8 @@ button:focus-visible {
 
 .empty-state > button[type="button"],
 .pagination button,
-.form-error button {
+.form-error button,
+.invite-issuance button {
   font: inherit;
   min-height: 48px;
   padding: 0.5rem 0.75rem;
@@ -264,7 +265,8 @@ button:focus-visible {
   margin-block-end: 1.5rem;
 }
 
-.pagination button:disabled {
+.pagination button:disabled,
+.invite-issuance button:disabled {
   opacity: 0.5;
   cursor: default;
 }
@@ -400,6 +402,42 @@ button:focus-visible {
   color: var(--color-ink-soft);
   font-size: 0.9rem;
   text-align: center;
+}
+
+/* Invite issuance: the Admin's action, the code and its expiry in local time. */
+.invite-issuance {
+  display: grid;
+  gap: 0.75rem;
+  margin-block-end: 1.5rem;
+  padding: 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.invite-issuance h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.invite-details {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.invite-details p {
+  margin: 0;
+}
+
+.invite-label {
+  color: var(--color-ink-soft);
+  font-weight: 600;
+}
+
+.invite-code {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
 }
 
 @container (width >= 34rem) {

@@ -1,6 +1,6 @@
 // Every failure the API can return is explained in Spanish with consistent
 // wording, mapped from the ProblemDetail `code` (spec #14, "Error mapping").
-import { InvalidRedemptionError } from "./invites";
+import { InvalidInviteError, InvalidRedemptionError } from "./invites";
 import { InvalidDniError } from "./members";
 import { InvalidPageError } from "./page";
 import { isApiError, type ProblemDetail } from "./problem";
@@ -44,7 +44,8 @@ export function messageForFailure(error: unknown, context?: "login"): string {
   if (
     error instanceof InvalidPageError ||
     error instanceof InvalidDniError ||
-    error instanceof InvalidRedemptionError
+    error instanceof InvalidRedemptionError ||
+    error instanceof InvalidInviteError
   ) {
     return unexpectedResponseMessage;
   }

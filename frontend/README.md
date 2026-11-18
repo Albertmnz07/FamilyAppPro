@@ -16,7 +16,7 @@ React + TypeScript + Vite app for the family circuit (spec #14). Spanish UI, mob
 ## Structure
 
 - `src/api/` — the one module that touches the network: typed transport over `fetch` (bearer on authenticated calls), RFC 9457 `ProblemDetail` shaping with `code`/`errors`, Spring `Page` parsing, endpoint functions and the generated types (`schema.d.ts`, committed).
-- `src/auth/` — in-memory token store and the global 401 handler (redirect to `/login` with a notice).
+- `src/auth/` — in-memory session (the bearer token and the Persona it identifies, taken from login) and the global 401 handler (redirect to `/login` with a notice).
 - `src/forms/` — accessible error bridge: `aria-invalid` in step with `:user-invalid`, one polite live region per page.
 - `src/pages/`, `src/shell/`, `src/routing/` — the five routes, the mobile shell and token-presence route protection.
 

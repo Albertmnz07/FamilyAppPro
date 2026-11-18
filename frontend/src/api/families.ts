@@ -50,3 +50,18 @@ export async function createFamily(name: string): Promise<Family> {
   });
   return toFamily(payload);
 }
+
+/**
+ * One Family by id, with the accepted-member check the backend imposes. The
+ * workspace reads `adminPersonaId` here to compare it with the current Persona
+ * and decide whether to offer Invite issuance (spec #14, "Invite UX").
+ */
+export async function getFamily(familyId: string, signal?: AbortSignal): Promise<Family> {
+  const payload = await request<FamilyResponse>({
+    method: "GET",
+    path: `/families/${encodeURIComponent(familyId)}`,
+    authorized: true,
+    signal,
+  });
+  return toFamily(payload);
+}

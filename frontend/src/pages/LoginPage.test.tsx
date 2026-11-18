@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import type { components } from "../api/schema";
 import type { ProblemDetail } from "../api/problem";
-import { clearToken, getToken } from "../auth/token";
+import { clearToken, getPersonaId, getToken } from "../auth/token";
 import { jsonResponse } from "../test/http";
 import { LoginPage } from "./LoginPage";
 
@@ -82,6 +82,7 @@ describe("LoginPage", () => {
     await waitFor(() => expect(currentPath()).toBe("/families"));
     expect(screen.getByText("pantalla de familias")).toBeInTheDocument();
     expect(getToken()).toBe("token-1");
+    expect(getPersonaId()).toBe("p1");
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe("http://localhost:8080/api/v1/auth/login");
     expect(init.headers.get("Authorization")).toBeNull();

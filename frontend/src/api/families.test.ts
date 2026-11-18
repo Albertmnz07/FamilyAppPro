@@ -1,11 +1,29 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { setToken, clearToken } from "../auth/token";
 import { jsonResponse } from "../test/http";
-import { createFamily, listMyFamilies } from "./families";
+import { createFamily, getFamily, listMyFamilies } from "./families";
 
 afterEach(() => {
   vi.unstubAllGlobals();
   clearToken();
+});
+
+describe("getFamily", () => {
+  it("reads one family with the bearer token so the workspace can compare its admin", async () => {
+    setToken("token-1");
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({ id: "f1", name: "Rojas", adminPersonaId: "p1" }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const family = await getFamily("f1");
+
+    expect(family).toEqual({ id: "f1", name: "Rojas", adminPersonaId: "p1" });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://localhost:8080/api/v1/families/f1");
+    expect(init.method).toBe("GET");
+    expect(init.headers.get("Authorization")).toBe("Bearer token-1");
+  });
 });
 
 describe("listMyFamilies", () => {

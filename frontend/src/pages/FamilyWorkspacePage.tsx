@@ -1,8 +1,16 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router";
+import { getFamily } from "../api/families";
+import { issueInvite, type IssuedInvite } from "../api/invites";
 import { getDniPhoto, getMemberDni, listFamilyMembers, type Member } from "../api/members";
 import { messageForDniFailure, messageForFailure } from "../api/messages";
+import { getPersonaId } from "../auth/token";
+
+/** The backend sends an ISO instant; the browser shows it in local time (spec #14, "Texts"). */
+function formatInviteExpiry(expiresAt: string): string {
+  return new Date(expiresAt).toLocaleString("es-ES", { dateStyle: "long", timeStyle: "short" });
+}
 
 /** Syncs fetched photo bytes to the DOM and releases the object URL on change. */
 function PhotoImage({ blob, alt }: { blob: Blob; alt: string }) {
@@ -24,7 +32,24 @@ export function FamilyWorkspacePage() {
   const { familyId = "" } = useParams<{ familyId: string }>();
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<Member | null>(null);
+  const [invite, setInvite] = useState<IssuedInvite | null>(null);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const currentPersonaId = getPersonaId();
   const dniHeadingRef = useRef<HTMLHeadingElement | null>(null);
+  // The Family carries the Admin's Persona; only that Persona may issue Invites.
+  const familyQuery = useQuery({
+    queryKey: ["family", familyId],
+    queryFn: ({ signal }) => getFamily(familyId, signal),
+  });
+  const isAdmin =
+    currentPersonaId !== null && familyQuery.data?.adminPersonaId === currentPersonaId;
+  const inviteMutation = useMutation({
+    mutationFn: () => issueInvite(familyId),
+    onSuccess: (issued) => {
+      setInvite(issued);
+      setCopyState("idle");
+    },
+  });
   const membersQuery = useQuery({
     queryKey: ["members", familyId, page],
     queryFn: ({ signal }) => listFamilyMembers(familyId, page, signal),
@@ -66,6 +91,15 @@ export function FamilyWorkspacePage() {
   function changePage(next: number) {
     setSelected(null);
     setPage(next);
+  }
+
+  async function copyInviteCode(code: string) {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopyState("copied");
+    } catch {
+      setCopyState("failed");
+    }
   }
 
   return (
@@ -140,6 +174,48 @@ export function FamilyWorkspacePage() {
             </nav>
           )}
         </>
+      )}
+      {isAdmin && (
+        <section className="invite-issuance" aria-labelledby="invite-heading">
+          <h2 id="invite-heading">Invitación</h2>
+          {inviteMutation.isError && (
+            <p className="form-error" role="alert">
+              {messageForFailure(inviteMutation.error)}
+            </p>
+          )}
+          <button
+            type="button"
+            disabled={inviteMutation.isPending}
+            onClick={() => inviteMutation.mutate()}
+          >
+            {inviteMutation.isPending ? "Emitiendo…" : "Emitir invitación"}
+          </button>
+          {invite && (
+            <div className="invite-details">
+              <p>
+                <span className="invite-label">Código:</span>{" "}
+                <code className="invite-code">{invite.code}</code>
+              </p>
+              <p>
+                <span className="invite-label">Caduca:</span>{" "}
+                <time dateTime={invite.expiresAt}>{formatInviteExpiry(invite.expiresAt)}</time>
+              </p>
+              <button type="button" onClick={() => void copyInviteCode(invite.code)}>
+                Copiar código
+              </button>
+              {copyState === "copied" && (
+                <p className="notice" role="status">
+                  Código copiado.
+                </p>
+              )}
+              {copyState === "failed" && (
+                <p className="form-error" role="alert">
+                  No se pudo copiar el código. Cópialo a mano.
+                </p>
+              )}
+            </div>
+          )}
+        </section>
       )}
       {selected && (
         <section className="dni-view" aria-labelledby="dni-heading">

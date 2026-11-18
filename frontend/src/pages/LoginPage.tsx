@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router";
 import { login, type LoginRequest } from "../api/auth";
 import { messageForFailure } from "../api/messages";
-import { setToken } from "../auth/token";
+import { setPersonaId, setToken } from "../auth/token";
 import { useUserInvalidBridge } from "../forms/useUserInvalidBridge";
 
 function readNotice(state: unknown): string | null {
@@ -25,6 +25,7 @@ export function LoginPage() {
     mutationFn: (credentials: LoginRequest) => login(credentials),
     onSuccess: (session) => {
       setToken(session.token);
+      setPersonaId(session.personaId);
       navigate("/families", { replace: true });
     },
     // On this screen the backend's "unauthorized" means rejected credentials,
