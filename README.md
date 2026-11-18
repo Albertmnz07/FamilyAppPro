@@ -1,43 +1,101 @@
 # FamilyAppPro
 
-Local API for the family app: personas identified by DNI share their DNI entity (number plus photos) with the families they join, while consent is in force.
+A family app built around the DNI. Each persona shares their DNI entity (number plus photos) with the families they join, for as long as their consent is in force. A Spring Boot API serves a React + TypeScript front-end from the same artifact, so one process runs the whole app on `localhost`.
+
+The user interface is in Spanish.
 
 ## Requirements
 
-- Java 21
-- PostgreSQL running locally on `localhost:5432`
+| Tool | Version | Needed for |
+| --- | --- | --- |
+| Java | 21 | API, build and tests |
+| PostgreSQL | any recent version, listening on `localhost:5432` | the database |
+| Node.js + npm | 22.12 or newer | building the front-end, its tests, front-end development |
 
-## Bootstrap the database (one time)
+## Deploy it on localhost
+
+### 1. Bootstrap the database (one time)
 
 ```bash
 sudo -u postgres psql -f db/bootstrap.sql
 ```
 
-The application expects database `familyapp` with user `familyapp` / password `familyapp`, and applies the versioned Flyway migrations in `src/main/resources/db/migration` on startup (`spring.jpa.hibernate.ddl-auto=validate` checks the schema against the entities). A schema created earlier by `ddl-auto=update` is baselined automatically at V1. Override with `DB_URL`, `DB_USERNAME` and `DB_PASSWORD` if needed.
+This creates the `familyapp` role (`familyapp` / `familyapp`) and the `familyapp` database. Flyway applies the migrations in `src/main/resources/db/migration` on every start, so the schema is never created by hand.
 
-## Schema migrations
-
-The schema is owned by the ordered migrations in `src/main/resources/db/migration`, applied by Flyway on startup; Hibernate never changes the schema, it only validates the migrated one against the entities.
-
-`V1` captures the schema that `ddl-auto=update` produced (including the legacy `front_photo`/`back_photo` bytea columns); `V2` drops those columns after the move to object storage. A database created before Flyway was adopted is baselined at V1, so it skips `V1` and receives `V2` and every later migration. To change the schema, add a migration — `V3__add_membership_status_index.sql` — and never edit one that has already been applied.
-
-The tests run the same migrations against H2 in PostgreSQL mode, so a migration that drifts from the entities fails the suite.
-
-## Run
+To start over, stop the app, then drop and re-create the database and delete the photo store:
 
 ```bash
-./mvnw spring-boot:run
+sudo -u postgres psql -c 'DROP DATABASE familyapp'
+sudo -u postgres psql -f db/bootstrap.sql
+rm -rf data/photos
 ```
 
-- API: `http://localhost:8080/api/v1`
+### 2. Build and run the single artifact
+
+```bash
+./mvnw package
+java -jar target/demo-0.0.1-SNAPSHOT.jar
+```
+
+Then open <http://localhost:8080>.
+
+The `package` phase runs `npm ci` and `npm run build` inside `frontend/` and copies `frontend/dist` into the jar's static resources, so the one process serves both the app and the API at the same origin — no second server and no CORS involved. Building the artifact requires npm on the build machine; `./mvnw test` does not.
+
+### Run the front-end in development (optional)
+
+Two processes, with Vite serving the app and proxying nothing — the front-end calls the API by absolute URL:
+
+```bash
+# terminal 1
+./mvnw spring-boot:run
+
+# terminal 2
+cd frontend
+npm install        # or `npm ci` for a lockfile-exact install
+npm run dev
+```
+
+Vite serves the app on <http://localhost:5173>, which is one of the CORS origins allowed by default. Set `VITE_API_BASE_URL` before `npm run dev` (or `npm run build`) to point the app at a different API.
+
+## Use it
+
+The whole circuit needs two personas: the one who creates the family, and the one who joins it. Use a second browser profile or a private window for the second persona, so the two sessions don't share a token.
+
+1. **Register** at `/register`. Each persona needs a username (3–30 characters: letters, digits, dots, underscores or hyphens), a Spanish DNI (eight digits plus its check letter, for example `40000001B`), a password of 8–100 characters, and a photo of each side of the DNI (up to 1 MB each). The two photos are what the family will see later.
+2. **Log in** at `/login`. The session lasts seven days; when the token expires the app returns to the login screen with a notice.
+3. **Create a family** on `/families`. Whoever creates it becomes its Admin, marked with a badge in the workspace.
+4. **Issue an invite** from the family workspace: `Emitir invitación` shows a single-use code and its expiry (seven days), with a button to copy it.
+5. **Redeem the invite** as the second persona: paste the code into `Canjear una invitación` on `/families`, or open the shared link `/invites/<code>` directly. Joining accepts that persona's consent, so their DNI becomes visible to the family.
+6. **View a DNI** with `Ver DNI` on a member row: the number and both photos, while that persona's consent is in force.
+7. **Revoke your own consent** with `Revocar consentimiento` on your own row, after confirming. The row then reads `Sin consentimiento` and the DNI stops being shown to anyone in that family. You stay a member — revoking consent is not leaving the family.
+8. **Remove a member** (Admin only) with `Retirar` on any row except your own, after confirming. The row disappears and that persona loses access to the family. The family's Admin cannot be removed: the API refuses with `cannot-remove-admin`, and the app shows the refusal in Spanish.
+
+## Configuration
+
+Everything has a working default for local use; override with environment variables.
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `DB_URL` | `jdbc:postgresql://localhost:5432/familyapp` | JDBC URL |
+| `DB_USERNAME` | `familyapp` | database user |
+| `DB_PASSWORD` | `familyapp` | database password |
+| `PHOTOS_DIR` | `./data/photos` | where DNI photos are stored on disk |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:3000,http://localhost:5173` | origins allowed to call the API in development |
+| `VITE_API_BASE_URL` | `http://localhost:8080/api/v1` | API base URL compiled into the front-end |
+
+The server listens on port 8080. If you change it with `SERVER_PORT`, rebuild the front-end with a matching `VITE_API_BASE_URL`, because the built app carries the API URL rather than discovering it.
+
+DNI photos live outside PostgreSQL, in the local photo store rooted at `PHOTOS_DIR`; the database keeps only the photo keys.
+
+## API
+
+- Base path: `http://localhost:8080/api/v1`
 - OpenAPI description: `http://localhost:8080/v3/api-docs`
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 
-DNI photos are stored outside PostgreSQL, in the local photo store rooted at `./data/photos` (override with `PHOTOS_DIR`); the database keeps only the photo keys.
+### Authentication
 
-## Authentication
-
-A persona registers with a `username`, a `dni`, a `password` (8-100 characters) and the front/back photos. Login exchanges the credentials for a bearer token:
+Login exchanges the credentials for a bearer token:
 
 ```bash
 curl -X POST http://localhost:8080/api/v1/auth/login \
@@ -51,9 +109,9 @@ Every protected request then carries the token:
 Authorization: Bearer <token>
 ```
 
-A missing, malformed or unknown token returns `401`. Tokens expire after seven days. CORS for the front-end defaults to `http://localhost:3000` and `http://localhost:5173` (override with `CORS_ALLOWED_ORIGINS`).
+A missing, malformed or unknown token returns `401`. Tokens expire after seven days.
 
-## Endpoints
+### Endpoints
 
 | Method | Path | Who |
 | --- | --- | --- |
@@ -72,21 +130,21 @@ A missing, malformed or unknown token returns `401`. Tokens expire after seven d
 | `GET` | `/api/v1/families/{id}/members/{personaId}/dni` | accepted member, consent in force |
 | `GET` | `/api/v1/families/{id}/members/{personaId}/dni/{front,back}` | accepted member, consent in force |
 
-Members are listed alphabetically by DNI. Each member exposes its `username` (always) and its `dni` (`null` while that persona's consent is not in force). Errors use `application/problem+json` (RFC 9457) with a `code` property.
+Members are listed alphabetically by DNI. Each member exposes its `username` (always) and its `dni` (`null` while that persona's consent is not in force). Errors use `application/problem+json` (RFC 9457) with a `code` property, which is what the front-end maps to Spanish messages.
 
 `GET /api/v1/me/families` and `GET /api/v1/families/{id}/members` are paginated with Spring's `page`/`size` query parameters (default `page=0`, `size=20`, maximum `size=100`) and return Spring's paged JSON shape (`content`, `totalElements`, `totalPages`, `number`, `size`, …). A `size` above the maximum is clamped to `100` rather than rejected. Ordering is fixed server-side (families by name, members by DNI): the client `sort` parameter is ignored and the paged metadata reports the page as unsorted.
 
+## Database and migrations
+
+The schema is owned by the ordered migrations in `src/main/resources/db/migration`, applied by Flyway on startup; Hibernate never changes the schema, it only validates the migrated one against the entities (`spring.jpa.hibernate.ddl-auto=validate`).
+
+`V1` captures the schema that `ddl-auto=update` produced (including the legacy `front_photo`/`back_photo` bytea columns); `V2` drops those columns after the move to object storage. A database created before Flyway was adopted is baselined at V1, so it skips `V1` and receives `V2` and every later migration. To change the schema, add a migration — `V3__add_membership_status_index.sql` — and never edit one that has already been applied.
+
 ## Front-end
 
-The React + TypeScript + Vite app lives in `frontend/` (ADR-0006). It reaches the API by absolute URL from `VITE_API_BASE_URL`, defaulting to `http://localhost:8080/api/v1`; there is no dev proxy, so development uses the CORS origins configured under [Authentication](#authentication). To run it against a backend started with `./mvnw spring-boot:run`:
+The React + TypeScript + Vite app lives in `frontend/` (see `docs/adr/0006-frontend-location-and-api-base-url.md`). It reaches the API by absolute URL from `VITE_API_BASE_URL`, defaulting to `http://localhost:8080/api/v1`; there is no dev proxy, so development relies on the CORS origins above.
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Vite serves the app on `http://localhost:5173`. Override the API base URL by exporting `VITE_API_BASE_URL` before `npm run dev` or `npm run build`.
+The production build is integrated into the single Spring artifact: `npm run build` (which runs `tsc -b && vite build`) emits `frontend/dist`, and the Maven `package` phase runs `npm ci` and `npm run build` in `frontend/` and copies `frontend/dist` into the jar's static resources (`target/classes/static`). The npm steps are bound to `prepare-package`, after the test phase, so `./mvnw test` never needs Node.
 
 ### Checks
 
@@ -96,13 +154,18 @@ Vite serves the app on `http://localhost:5173`. Override the API base URL by exp
 git config core.hooksPath .githooks
 ```
 
-### Build integration
-
-The production build is integrated into the single Spring artifact. `npm run build` (which runs `tsc -b && vite build`) emits `frontend/dist`, and the Maven `package` phase runs `npm ci` and `npm run build` in `frontend/` and copies `frontend/dist` into the jar's static resources (`target/classes/static`). One artifact then serves both the API and the app:
+## Tests
 
 ```bash
-./mvnw package
-java -jar target/demo-0.0.1-SNAPSHOT.jar
+./mvnw test                      # backend, on H2 in PostgreSQL mode
+cd frontend && npm run check     # typecheck, lint and front-end tests
 ```
 
-Open `http://localhost:8080`: the app is served same-origin with the API, so no extra CORS configuration is needed. The npm steps are bound to `prepare-package`, after the test phase, so `./mvnw test` never needs Node; building the artifact (`package` or later) requires Node.js and npm on the build machine.
+The backend tests run the same Flyway migrations against H2, so a migration that drifts from the entities fails the suite.
+
+## Known limitations
+
+- **No SPA fallback.** The jar serves the app at `/` and the hashed assets, but reloading a client route such as `/families/{id}` returns 404. Enter the app at `http://localhost:8080` and navigate from there; deep-link forwarding needs a backend route, which the front-end spec deliberately excluded.
+- **Invites are single-use and expire after seven days**, and the app shows no invite history.
+- **No password reset or account deletion** yet.
+- **Photos are local files** under `PHOTOS_DIR`, so they do not travel with the database.
