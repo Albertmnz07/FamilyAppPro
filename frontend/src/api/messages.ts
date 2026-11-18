@@ -1,5 +1,6 @@
 // Every failure the API can return is explained in Spanish with consistent
 // wording, mapped from the ProblemDetail `code` (spec #14, "Error mapping").
+import { InvalidDniError } from "./members";
 import { InvalidPageError } from "./page";
 import { isApiError, type ProblemDetail } from "./problem";
 
@@ -35,6 +36,22 @@ export const unexpectedResponseMessage = "La respuesta del servidor no es válid
 /** One place that turns any failed request into the Spanish message the screens show. */
 export function messageForFailure(error: unknown, context?: "login"): string {
   if (isApiError(error)) return messageForProblem(error.problem ?? {}, context);
-  if (error instanceof InvalidPageError) return unexpectedResponseMessage;
+  if (error instanceof InvalidPageError || error instanceof InvalidDniError) {
+    return unexpectedResponseMessage;
+  }
   return networkErrorMessage;
+}
+
+/**
+ * On the DNI view the reason matters more than the generic code: a missing
+ * Consent is a privacy rule, while a missing Member means the person left.
+ */
+export function messageForDniFailure(error: unknown): string {
+  if (isApiError(error) && error.status === 403) {
+    return "Esta persona no tiene el consentimiento vigente en esta familia.";
+  }
+  if (isApiError(error) && error.status === 404) {
+    return "Esta persona ya no es miembro de la familia.";
+  }
+  return messageForFailure(error);
 }

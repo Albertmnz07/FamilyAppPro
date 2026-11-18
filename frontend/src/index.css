@@ -277,6 +277,180 @@ button:focus-visible {
   margin-block-end: 1rem;
 }
 
+/* Family workspace: one semantic table, rendered as cards while its own
+   container is narrow and as a table when it has room. Cells wrap instead of
+   scrolling sideways, and the column labels are injected into each card. */
+.member-table-wrapper {
+  container-type: inline-size;
+  margin-block-end: 1.5rem;
+}
+
+.member-table {
+  display: block;
+  inline-size: 100%;
+  border-collapse: collapse;
+}
+
+.member-table caption {
+  display: block;
+  padding-block-end: 0.75rem;
+  color: var(--color-ink-soft);
+  text-align: start;
+}
+
+.member-table thead {
+  display: none;
+}
+
+.member-table tbody {
+  display: block;
+}
+
+.member-table tr {
+  display: grid;
+  gap: 0.375rem;
+  margin-block-end: 0.75rem;
+  padding: 0.875rem 1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.member-table th,
+.member-table td {
+  display: block;
+  padding: 0;
+  overflow-wrap: anywhere;
+  text-align: start;
+  font-weight: 400;
+}
+
+.member-table tbody th {
+  font-weight: 650;
+}
+
+.member-table td::before {
+  content: attr(data-label) ": ";
+  color: var(--color-ink-soft);
+  font-weight: 600;
+}
+
+.member-table button {
+  font: inherit;
+  inline-size: 100%;
+  min-height: 48px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-primary);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.badge {
+  display: inline-block;
+  margin-inline-start: 0.5rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-info-surface);
+  color: var(--color-info-ink);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.loading {
+  color: var(--color-ink-soft);
+}
+
+.dni-view {
+  margin-block-start: 1.5rem;
+  padding: 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.dni-view h2 {
+  margin-block-start: 0;
+  font-size: 1.1rem;
+}
+
+.dni-photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 1rem;
+}
+
+.dni-photos figure {
+  margin: 0;
+}
+
+.dni-photos img {
+  display: block;
+  inline-size: 100%;
+  aspect-ratio: 856 / 540;
+  object-fit: contain;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+}
+
+.dni-photos figcaption {
+  color: var(--color-ink-soft);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+@container (width >= 34rem) {
+  .member-table {
+    display: table;
+    table-layout: fixed;
+  }
+
+  .member-table caption {
+    display: table-caption;
+  }
+
+  .member-table thead {
+    display: table-header-group;
+  }
+
+  .member-table tbody {
+    display: table-row-group;
+  }
+
+  .member-table tr {
+    display: table-row;
+    margin: 0;
+    padding: 0;
+    background: none;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .member-table th,
+  .member-table td {
+    display: table-cell;
+    padding: 0.75rem 1rem;
+    border-block-end: 1px solid var(--color-border);
+    vertical-align: top;
+  }
+
+  .member-table thead th {
+    background: var(--color-bg);
+    font-weight: 650;
+  }
+
+  .member-table td::before {
+    content: none;
+  }
+
+  .member-table button {
+    inline-size: auto;
+  }
+}
+
 /* Hides content visually but keeps it in the accessibility tree. */
 .visually-hidden {
   position: absolute !important;
