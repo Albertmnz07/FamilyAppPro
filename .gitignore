@@ -4,3 +4,5 @@ target/
 .vscode/
 .DS_Store
 /data/
+.kdev4/
+FamilyApp.kdev4

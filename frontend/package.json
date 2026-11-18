@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "oxlint",
+    "check": "npm run typecheck && npm run lint && npm test",
+    "lint": "oxlint --deny-warnings",
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "api:snapshot": "node scripts/fetch-openapi.mjs",

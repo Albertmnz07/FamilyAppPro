@@ -88,6 +88,14 @@ npm run dev
 
 Vite serves the app on `http://localhost:5173`. Override the API base URL by exporting `VITE_API_BASE_URL` before `npm run dev` or `npm run build`.
 
+### Checks
+
+`npm run check` runs typecheck, lint and the test suite in one go; lint treats warnings as failures. The repository ships its git hooks in `.githooks/` — a pre-commit running the front-end checks and a pre-push running `./mvnw -q test`. Enable them once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
 ### Build integration
 
 The production build is integrated into the single Spring artifact. `npm run build` (which runs `tsc -b && vite build`) emits `frontend/dist`, and the Maven `package` phase runs `npm ci` and `npm run build` in `frontend/` and copies `frontend/dist` into the jar's static resources (`target/classes/static`). One artifact then serves both the API and the app:
