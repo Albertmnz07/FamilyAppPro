@@ -41,6 +41,7 @@ function renderLogin(options?: { state?: unknown }) {
         <LocationProbe />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<p>pantalla de registro</p>} />
           <Route path="/families" element={<p>pantalla de familias</p>} />
         </Routes>
       </MemoryRouter>
@@ -161,5 +162,17 @@ describe("LoginPage", () => {
     renderLogin({ state: { notice: sessionExpiredNotice } });
 
     expect(screen.getByText(sessionExpiredNotice)).toBeInTheDocument();
+  });
+
+  it("offers a way to create an account and navigates to /register", async () => {
+    const user = userEvent.setup();
+    const { currentPath } = renderLogin();
+
+    const link = screen.getByRole("link", { name: "Crear cuenta" });
+    expect(link).toHaveAttribute("href", "/register");
+
+    await user.click(link);
+
+    await waitFor(() => expect(currentPath()).toBe("/register"));
   });
 });

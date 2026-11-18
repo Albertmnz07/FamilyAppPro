@@ -391,4 +391,16 @@ describe("RegisterPage", () => {
 
     expect(await screen.findByText("No se pudo conectar con el servidor. Inténtalo de nuevo.")).toBeInTheDocument();
   });
+
+  it("offers a way back to the login screen and navigates to /login", async () => {
+    const user = userEvent.setup();
+    const { currentPath } = renderRegister();
+
+    const link = screen.getByRole("link", { name: "Iniciar sesión" });
+    expect(link).toHaveAttribute("href", "/login");
+
+    await user.click(link);
+
+    await waitFor(() => expect(currentPath()).toBe("/login"));
+  });
 });

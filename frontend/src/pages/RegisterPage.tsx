@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { errorMessages, messageForFailure } from "../api/messages";
 import { register, type Registration } from "../api/personas";
 import { isApiError, normalizeFieldErrors } from "../api/problem";
@@ -367,6 +367,9 @@ export function RegisterPage() {
           {registerMutation.isPending ? "Creando cuenta…" : "Crear cuenta"}
         </button>
       </form>
+      <p className="form-switch">
+        ¿Ya tienes cuenta? <Link to="/login">Iniciar sesión</Link>
+      </p>
     </section>
   );
 }

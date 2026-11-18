@@ -70,6 +70,7 @@ body {
 
 .back-button:focus-visible,
 .field input:focus-visible,
+.form-switch a:focus-visible,
 button:focus-visible {
   outline: 3px solid var(--color-primary);
   outline-offset: 2px;
@@ -169,6 +170,20 @@ button:focus-visible {
 .form button[type="submit"]:disabled {
   opacity: 0.6;
   cursor: default;
+}
+
+/* The way between login and registration: a quiet line under the form, with the
+   action itself carrying the emphasis. */
+.form-switch {
+  margin-block: 1rem 0;
+  margin-inline: 0;
+  text-align: center;
+  color: var(--color-ink-soft);
+}
+
+.form-switch a {
+  color: var(--color-primary);
+  font-weight: 600;
 }
 
 .form-error {
