@@ -1,0 +1,5 @@
+#!/bin/sh
+# Slow guardrail: the backend suite runs before anything leaves the machine.
+# Enable once per clone with: git config core.hooksPath .githooks
+set -e
+./mvnw -q test

@@ -1,0 +1,5 @@
+#!/bin/sh
+# Fast guardrail: typecheck, lint (warnings fail) and the front-end suite.
+# Enable once per clone with: git config core.hooksPath .githooks
+set -e
+npm --prefix frontend run check

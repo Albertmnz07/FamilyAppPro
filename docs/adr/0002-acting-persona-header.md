@@ -1,3 +1,7 @@
+---
+status: superseded by ADR-0004
+---
+
 # Acting persona identified by header
 
 Until real authentication exists, the API resolves the **acting persona** from the `X-Persona-Id` request header: a UUID looked up in `PersonaRepository` by an argument resolver, surfaced to controllers as an annotated `Persona` parameter. A missing, malformed or unknown UUID is rejected with `401`.

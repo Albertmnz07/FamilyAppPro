@@ -1,0 +1,569 @@
+/* Mobile-first, modern native CSS: custom properties, system font stack,
+   :user-invalid for error styling. No component library, no dark mode, no
+   decorative animations (spec #14, "Styling"). */
+
+:root {
+  --color-bg: #f4f3f0;
+  --color-surface: #ffffff;
+  --color-ink: #201f1c;
+  --color-ink-soft: #5f5e58;
+  --color-primary: #2f6f4f;
+  --color-primary-ink: #ffffff;
+  --color-danger: #b3261e;
+  --color-danger-surface: #fdecea;
+  --color-info-ink: #1c4a72;
+  --color-info-surface: #edf3f9;
+  --color-border: #d9d6cf;
+  --radius: 12px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.5;
+}
+
+.shell {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.app-name {
+  font-weight: 650;
+}
+
+.back-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  min-height: 48px;
+  margin-inline-start: -0.75rem;
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  color: inherit;
+  cursor: pointer;
+}
+
+.back-button:focus-visible,
+.field input:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.shell-main {
+  flex: 1;
+  width: 100%;
+  max-width: 40rem;
+  margin-inline: auto;
+  padding: 1rem;
+}
+
+.page h1 {
+  font-size: 1.35rem;
+  margin: 0.25rem 0 1rem;
+}
+
+.placeholder {
+  color: var(--color-ink-soft);
+}
+
+.form {
+  display: grid;
+  gap: 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.375rem;
+}
+
+.field label {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.field input {
+  font: inherit;
+  font-size: max(1rem, 1em);
+  padding: 0.75rem;
+  min-height: 48px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: inherit;
+}
+
+/* Visual error layer: applies only once the user has interacted with the
+   field; the bridge keeps aria-invalid in step with it. */
+.field input:user-invalid {
+  border-color: var(--color-danger);
+}
+
+.field-error {
+  display: none;
+  color: var(--color-danger);
+  font-size: 0.9rem;
+}
+
+.field input:user-invalid ~ .field-error {
+  display: block;
+}
+
+/* Registration photo inputs keep the same tap target and error styling; the
+   local preview uses the ID-1 card ratio so the document looks like itself. */
+.field input[type="file"] {
+  padding-block: 0.5rem;
+}
+
+.photo-preview {
+  width: 100%;
+  max-width: 18rem;
+  aspect-ratio: 856 / 540;
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+}
+
+.form button[type="submit"] {
+  font: inherit;
+  min-height: 48px;
+  padding: 0.75rem 1rem;
+  border: 0;
+  border-radius: 8px;
+  background: var(--color-primary);
+  color: var(--color-primary-ink);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.form button[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.form-error {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-danger);
+  border-radius: 8px;
+  background: var(--color-danger-surface);
+  color: var(--color-danger);
+}
+
+.notice {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  background: var(--color-info-surface);
+  color: var(--color-info-ink);
+}
+
+/* Families screen: one-dimensional rows and controls, so flexbox/grid rather
+   than fixed breakpoints; logical properties keep the spacing direction-agnostic. */
+.family-list {
+  display: grid;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0 0 1.5rem;
+  padding: 0;
+}
+
+.family-list a {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0.75rem 1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.family-list a:hover {
+  border-color: var(--color-primary);
+}
+
+.family-list a:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.empty-state {
+  display: grid;
+  gap: 1rem;
+  margin-block-end: 1.5rem;
+  padding: 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.empty-state p,
+.empty-state h2,
+.create-family h2 {
+  margin: 0;
+}
+
+.empty-state > button[type="button"],
+.pagination button,
+.form-error button,
+.invite-issuance button {
+  font: inherit;
+  min-height: 48px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-primary);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.redeem-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-block-end: 1.5rem;
+}
+
+.pagination button:disabled,
+.invite-issuance button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.create-family {
+  margin-block-start: 2rem;
+}
+
+.create-family h2 {
+  margin-block-end: 1rem;
+}
+
+/* Family workspace: one semantic table, rendered as cards while its own
+   container is narrow and as a table when it has room. Cells wrap instead of
+   scrolling sideways, and the column labels are injected into each card. */
+.member-table-wrapper {
+  container-type: inline-size;
+  margin-block-end: 1.5rem;
+}
+
+.member-table {
+  display: block;
+  inline-size: 100%;
+  border-collapse: collapse;
+}
+
+.member-table caption {
+  display: block;
+  padding-block-end: 0.75rem;
+  color: var(--color-ink-soft);
+  text-align: start;
+}
+
+.member-table thead {
+  display: none;
+}
+
+.member-table tbody {
+  display: block;
+}
+
+.member-table tr {
+  display: grid;
+  gap: 0.375rem;
+  margin-block-end: 0.75rem;
+  padding: 0.875rem 1rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.member-table th,
+.member-table td {
+  display: block;
+  padding: 0;
+  overflow-wrap: anywhere;
+  text-align: start;
+  font-weight: 400;
+}
+
+.member-table tbody th {
+  font-weight: 650;
+}
+
+.member-table td::before {
+  content: attr(data-label) ": ";
+  color: var(--color-ink-soft);
+  font-weight: 600;
+}
+
+.member-table button {
+  font: inherit;
+  inline-size: 100%;
+  min-height: 48px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-primary);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.badge {
+  display: inline-block;
+  margin-inline-start: 0.5rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-info-surface);
+  color: var(--color-info-ink);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.loading {
+  color: var(--color-ink-soft);
+}
+
+.dni-view {
+  margin-block-start: 1.5rem;
+  padding: 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.dni-view h2 {
+  margin-block-start: 0;
+  font-size: 1.1rem;
+}
+
+.dni-photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 1rem;
+}
+
+.dni-photos figure {
+  margin: 0;
+}
+
+.dni-photos img {
+  display: block;
+  inline-size: 100%;
+  aspect-ratio: 856 / 540;
+  object-fit: contain;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+}
+
+.dni-photos figcaption {
+  color: var(--color-ink-soft);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+/* Invite issuance: the Admin's action, the code and its expiry in local time. */
+.invite-issuance {
+  display: grid;
+  gap: 0.75rem;
+  margin-block-end: 1.5rem;
+  padding: 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.invite-issuance h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.invite-details {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.invite-details p {
+  margin: 0;
+}
+
+.invite-label {
+  color: var(--color-ink-soft);
+  font-weight: 600;
+}
+
+.invite-code {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+@container (width >= 34rem) {
+  .member-table {
+    display: table;
+    table-layout: fixed;
+  }
+
+  .member-table caption {
+    display: table-caption;
+  }
+
+  .member-table thead {
+    display: table-header-group;
+  }
+
+  .member-table tbody {
+    display: table-row-group;
+  }
+
+  .member-table tr {
+    display: table-row;
+    margin: 0;
+    padding: 0;
+    background: none;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .member-table th,
+  .member-table td {
+    display: table-cell;
+    padding: 0.75rem 1rem;
+    border-block-end: 1px solid var(--color-border);
+    vertical-align: top;
+  }
+
+  .member-table thead th {
+    background: var(--color-bg);
+    font-weight: 650;
+  }
+
+  .member-table td::before {
+    content: none;
+  }
+
+  .member-table button {
+    inline-size: auto;
+  }
+}
+
+/* Confirmation dialog and destructive actions: revoking a Consent and removing
+   a Member always pass through the native modal, which supplies the top layer,
+   focus containment and Esc dismissal (spec #14, "Consent UX"). */
+.row-actions {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.member-table button.danger {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background: rgb(0 0 0 / 0.4);
+}
+
+.confirm-dialog {
+  max-width: min(28rem, calc(100vw - 2rem));
+  padding: 1.25rem;
+  background: var(--color-surface);
+  color: inherit;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.confirm-dialog h2 {
+  margin-block: 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.confirm-dialog p {
+  margin-block: 0 1rem;
+}
+
+.confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.confirm-actions button {
+  font: inherit;
+  min-height: 48px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-primary);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.confirm-actions .danger {
+  border-color: var(--color-danger);
+  background: var(--color-danger);
+  color: #ffffff;
+}
+
+/* Hides content visually but keeps it in the accessibility tree. */
+.visually-hidden {
+  position: absolute !important;
+  clip-path: inset(50%) !important;
+  overflow: hidden !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  white-space: nowrap !important;
+}
