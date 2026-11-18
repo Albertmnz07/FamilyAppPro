@@ -3,7 +3,7 @@
 // normalizes the generated schema's optional fields into strict screen types.
 import type { components } from "./schema";
 import { InvalidPageError, parsePage, type Page } from "./page";
-import { request } from "./transport";
+import { request, resolveApiUrl } from "./transport";
 
 type MemberResponse = components["schemas"]["MemberResponse"];
 type DniResponse = components["schemas"]["DniResponse"];
@@ -86,4 +86,18 @@ export async function getMemberDni(
     frontPhotoUrl: payload.frontPhotoUrl,
     backPhotoUrl: payload.backPhotoUrl,
   };
+}
+
+/**
+ * The DTO's relative URL is used as-is: it is resolved against the API origin
+ * and fetched through the bearer-aware seam, then rendered as a blob URL.
+ */
+export async function getDniPhoto(photoUrl: string, signal?: AbortSignal): Promise<Blob> {
+  return request<Blob>({
+    method: "GET",
+    path: resolveApiUrl(photoUrl),
+    authorized: true,
+    responseType: "blob",
+    signal,
+  });
 }

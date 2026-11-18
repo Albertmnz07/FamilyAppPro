@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { clearToken, setToken } from "../auth/token";
 import { jsonResponse } from "../test/http";
-import { getMemberDni, listFamilyMembers } from "./members";
+import { getDniPhoto, getMemberDni, listFamilyMembers } from "./members";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -92,6 +92,23 @@ describe("getMemberDni", () => {
     });
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe("http://localhost:8080/api/v1/families/f1/members/p1/dni");
+    expect(init.headers.get("Authorization")).toBe("Bearer token-1");
+  });
+});
+
+describe("getDniPhoto", () => {
+  it("requests the DTO's relative photo URL against the API origin with the bearer token", async () => {
+    setToken("token-1");
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(new Blob(["photo"], { type: "image/png" }), { status: 200 }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const photo = await getDniPhoto("/api/v1/families/f1/members/p1/dni/front");
+
+    expect(photo).toBeInstanceOf(Blob);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://localhost:8080/api/v1/families/f1/members/p1/dni/front");
     expect(init.headers.get("Authorization")).toBe("Bearer token-1");
   });
 });

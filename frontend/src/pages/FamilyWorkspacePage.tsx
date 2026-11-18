@@ -1,8 +1,24 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router";
-import { getMemberDni, listFamilyMembers, type Member } from "../api/members";
+import { getDniPhoto, getMemberDni, listFamilyMembers, type Member } from "../api/members";
 import { messageForDniFailure, messageForFailure } from "../api/messages";
+
+/** Syncs fetched photo bytes to the DOM and releases the object URL on change. */
+function PhotoImage({ blob, alt }: { blob: Blob; alt: string }) {
+  const ref = useRef<HTMLImageElement | null>(null);
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const url = URL.createObjectURL(blob);
+    element.src = url;
+    return () => {
+      URL.revokeObjectURL(url);
+      element.removeAttribute("src");
+    };
+  }, [blob]);
+  return <img ref={ref} alt={alt} />;
+}
 
 export function FamilyWorkspacePage() {
   const { familyId = "" } = useParams<{ familyId: string }>();
@@ -21,6 +37,25 @@ export function FamilyWorkspacePage() {
     },
     enabled: selected !== null,
   });
+  const frontPhotoUrl = dniQuery.data?.frontPhotoUrl;
+  const backPhotoUrl = dniQuery.data?.backPhotoUrl;
+  const frontPhotoQuery = useQuery({
+    queryKey: ["dni-photo", familyId, selected?.personaId, "front", frontPhotoUrl],
+    queryFn: ({ signal }) => {
+      if (!frontPhotoUrl) throw new Error("No front photo URL");
+      return getDniPhoto(frontPhotoUrl, signal);
+    },
+    enabled: frontPhotoUrl !== undefined,
+  });
+  const backPhotoQuery = useQuery({
+    queryKey: ["dni-photo", familyId, selected?.personaId, "back", backPhotoUrl],
+    queryFn: ({ signal }) => {
+      if (!backPhotoUrl) throw new Error("No back photo URL");
+      return getDniPhoto(backPhotoUrl, signal);
+    },
+    enabled: backPhotoUrl !== undefined,
+  });
+  const dniFailure = dniQuery.error ?? frontPhotoQuery.error ?? backPhotoQuery.error;
   const pageData = membersQuery.data;
   const members = pageData?.content ?? [];
 
@@ -112,9 +147,9 @@ export function FamilyWorkspacePage() {
             DNI de {selected.username}
           </h2>
           {dniQuery.isPending && <p className="loading">Cargando DNI…</p>}
-          {dniQuery.isError && (
+          {dniFailure && (
             <p className="form-error" role="alert">
-              {messageForDniFailure(dniQuery.error)}
+              {messageForDniFailure(dniFailure)}
             </p>
           )}
           {dniQuery.data && (
@@ -122,22 +157,26 @@ export function FamilyWorkspacePage() {
               <p>
                 <strong>Número de DNI:</strong> {dniQuery.data.number}
               </p>
-              <div className="dni-photos">
-                <figure>
-                  <img
-                    src={dniQuery.data.frontPhotoUrl}
-                    alt={`Foto delantera del DNI de ${selected.username}`}
-                  />
-                  <figcaption>Anverso</figcaption>
-                </figure>
-                <figure>
-                  <img
-                    src={dniQuery.data.backPhotoUrl}
-                    alt={`Foto trasera del DNI de ${selected.username}`}
-                  />
-                  <figcaption>Reverso</figcaption>
-                </figure>
-              </div>
+              {frontPhotoQuery.data && backPhotoQuery.data ? (
+                <div className="dni-photos">
+                  <figure>
+                    <PhotoImage
+                      blob={frontPhotoQuery.data}
+                      alt={`Foto delantera del DNI de ${selected.username}`}
+                    />
+                    <figcaption>Anverso</figcaption>
+                  </figure>
+                  <figure>
+                    <PhotoImage
+                      blob={backPhotoQuery.data}
+                      alt={`Foto trasera del DNI de ${selected.username}`}
+                    />
+                    <figcaption>Reverso</figcaption>
+                  </figure>
+                </div>
+              ) : (
+                !dniFailure && <p className="loading">Cargando fotos…</p>
+              )}
             </>
           )}
         </section>

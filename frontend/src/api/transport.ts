@@ -22,6 +22,14 @@ export function buildUrl(path: string, query?: QueryParams): string {
   return url.toString();
 }
 
+/**
+ * Resolves a server-relative URL taken from a DTO (e.g. a DNI photo URL)
+ * against the API origin, never against the app's origin in development.
+ */
+export function resolveApiUrl(path: string): string {
+  return new URL(path, `${new URL(apiBaseUrl).origin}/`).toString();
+}
+
 export type RequestInit = {
   method: "GET" | "POST" | "DELETE";
   path: string;
@@ -36,6 +44,8 @@ export type RequestInit = {
   /** Authenticated calls carry `Authorization: Bearer`; login and registration omit it. */
   authorized?: boolean;
   signal?: AbortSignal;
+  /** Photo bytes are binary; never send them through the JSON parser. */
+  responseType?: "blob";
 };
 
 export async function request<T>(options: RequestInit): Promise<T> {
@@ -55,6 +65,9 @@ export async function request<T>(options: RequestInit): Promise<T> {
   });
   if (!response.ok) {
     throw await ApiError.fromResponse(response);
+  }
+  if (options.responseType === "blob") {
+    return (await response.blob()) as T;
   }
   const text = await response.text();
   if (!text) {

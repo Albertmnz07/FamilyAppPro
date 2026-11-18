@@ -33,6 +33,10 @@ export function messageForProblem(problem: ProblemDetail, context?: "login"): st
 
 export const unexpectedResponseMessage = "La respuesta del servidor no es válida. Inténtalo de nuevo.";
 
+export const dniWithoutConsentMessage =
+  "Esta persona no tiene el consentimiento vigente en esta familia.";
+export const dniNotMemberMessage = "Esta persona ya no es miembro de la familia.";
+
 /** One place that turns any failed request into the Spanish message the screens show. */
 export function messageForFailure(error: unknown, context?: "login"): string {
   if (isApiError(error)) return messageForProblem(error.problem ?? {}, context);
@@ -44,14 +48,11 @@ export function messageForFailure(error: unknown, context?: "login"): string {
 
 /**
  * On the DNI view the reason matters more than the generic code: a missing
- * Consent is a privacy rule, while a missing Member means the person left.
+ * Consent is a privacy rule, while a 404 means the Persona is no longer a
+ * Member of the Family.
  */
 export function messageForDniFailure(error: unknown): string {
-  if (isApiError(error) && error.status === 403) {
-    return "Esta persona no tiene el consentimiento vigente en esta familia.";
-  }
-  if (isApiError(error) && error.status === 404) {
-    return "Esta persona ya no es miembro de la familia.";
-  }
+  if (isApiError(error) && error.status === 403) return dniWithoutConsentMessage;
+  if (isApiError(error) && error.status === 404) return dniNotMemberMessage;
   return messageForFailure(error);
 }

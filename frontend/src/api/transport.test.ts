@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildUrl, request } from "./transport";
+import { buildUrl, request, resolveApiUrl } from "./transport";
 import { clearToken, setToken } from "../auth/token";
 import { jsonResponse } from "../test/http";
 
@@ -58,6 +58,29 @@ describe("request", () => {
     expect(init.body).toBeUndefined();
   });
 
+  it("returns binary responses unparsed, with the bearer token", async () => {
+    setToken("token-1");
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(new Blob(["photo"], { type: "image/png" }), {
+        status: 200,
+        headers: { "Content-Type": "image/png" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const blob = await request<Blob>({
+      method: "GET",
+      path: "/families/f1/members/p1/dni/front",
+      authorized: true,
+      responseType: "blob",
+    });
+
+    expect(blob).toBeInstanceOf(Blob);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://localhost:8080/api/v1/families/f1/members/p1/dni/front");
+    expect(init.headers.get("Authorization")).toBe("Bearer token-1");
+  });
+
   it("sends a FormData body and lets the browser set the multipart Content-Type", async () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ id: "p1" }));
     vi.stubGlobal("fetch", fetchMock);
@@ -89,5 +112,19 @@ describe("buildUrl", () => {
   it("encodes characters that are not allowed raw in query strings", () => {
     // URLSearchParams uses application/x-www-form-urlencoded encoding: space is `+`.
     expect(buildUrl("/thing", { q: "a b&c" })).toBe("http://localhost:8080/api/v1/thing?q=a+b%26c");
+  });
+});
+
+describe("resolveApiUrl", () => {
+  it("resolves a relative URL from a DTO against the API origin, not the app origin", () => {
+    expect(resolveApiUrl("/api/v1/families/f1/members/p1/dni/front")).toBe(
+      "http://localhost:8080/api/v1/families/f1/members/p1/dni/front",
+    );
+  });
+
+  it("leaves an already absolute URL alone", () => {
+    expect(resolveApiUrl("http://localhost:8080/api/v1/photos/front")).toBe(
+      "http://localhost:8080/api/v1/photos/front",
+    );
   });
 });

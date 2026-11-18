@@ -33,12 +33,24 @@ function memberPage(content: unknown[], overrides: Record<string, number> = {}) 
   });
 }
 
+let createObjectURL: ReturnType<typeof vi.fn>;
+let revokeObjectURL: ReturnType<typeof vi.fn>;
+
 beforeEach(() => {
   setToken("token-1");
+  createObjectURL = vi
+    .fn()
+    .mockReturnValueOnce("blob:front")
+    .mockReturnValueOnce("blob:back");
+  revokeObjectURL = vi.fn();
+  Object.defineProperty(URL, "createObjectURL", { configurable: true, value: createObjectURL });
+  Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: revokeObjectURL });
 });
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  Reflect.deleteProperty(URL, "createObjectURL");
+  Reflect.deleteProperty(URL, "revokeObjectURL");
   clearToken();
 });
 
@@ -83,10 +95,15 @@ describe("FamilyWorkspacePage", () => {
     expect(init.headers.get("Authorization")).toBe("Bearer token-1");
   });
 
-  it("shows the DNI number and both photos from their relative URLs", async () => {
+  it("shows the DNI number and both photos fetched from their relative URLs with the bearer token", async () => {
     const frontPhotoUrl = "/api/v1/families/f1/members/p1/dni/front";
     const backPhotoUrl = "/api/v1/families/f1/members/p1/dni/back";
+    const photoResponse = () =>
+      Promise.resolve(new Response(new Blob(["photo"], { type: "image/png" }), { status: 200 }));
     const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (url.endsWith("/dni/front") || url.endsWith("/dni/back")) {
+        return photoResponse();
+      }
       if (url.endsWith("/dni")) {
         return Promise.resolve(
           jsonResponse({
@@ -119,16 +136,19 @@ describe("FamilyWorkspacePage", () => {
     const dniView = await screen.findByRole("region", { name: "DNI de ana" });
     expect(within(dniView).getByRole("heading", { name: "DNI de ana" })).toBeInTheDocument();
     expect(within(dniView).getByText("12345678Z")).toBeInTheDocument();
-    expect(within(dniView).getByRole("img", { name: "Foto delantera del DNI de ana" })).toHaveAttribute(
-      "src",
-      frontPhotoUrl,
-    );
-    expect(within(dniView).getByRole("img", { name: "Foto trasera del DNI de ana" })).toHaveAttribute(
-      "src",
-      backPhotoUrl,
-    );
-    expect(fetchMock.mock.calls[1][0]).toBe("http://localhost:8080/api/v1/families/f1/members/p1/dni");
-    expect(fetchMock.mock.calls[1][1].headers.get("Authorization")).toBe("Bearer token-1");
+    expect(
+      await within(dniView).findByRole("img", { name: "Foto delantera del DNI de ana" }),
+    ).toHaveAttribute("src", "blob:front");
+    expect(
+      await within(dniView).findByRole("img", { name: "Foto trasera del DNI de ana" }),
+    ).toHaveAttribute("src", "blob:back");
+    const frontCall = fetchMock.mock.calls.find(([url]) => String(url).endsWith("/dni/front"));
+    const backCall = fetchMock.mock.calls.find(([url]) => String(url).endsWith("/dni/back"));
+    expect(frontCall?.[0]).toBe("http://localhost:8080/api/v1/families/f1/members/p1/dni/front");
+    expect(backCall?.[0]).toBe("http://localhost:8080/api/v1/families/f1/members/p1/dni/back");
+    expect(frontCall?.[1].headers.get("Authorization")).toBe("Bearer token-1");
+    expect(backCall?.[1].headers.get("Authorization")).toBe("Bearer token-1");
+    expect(createObjectURL).toHaveBeenCalledTimes(2);
   });
 
   it.each([
