@@ -1,9 +1,16 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router";
 import { getFamily } from "../api/families";
 import { issueInvite, type IssuedInvite } from "../api/invites";
-import { getDniPhoto, getMemberDni, listFamilyMembers, type Member } from "../api/members";
+import {
+  getDniPhoto,
+  getMemberDni,
+  listFamilyMembers,
+  removeMember,
+  revokeConsent,
+  type Member,
+} from "../api/members";
 import { messageForDniFailure, messageForFailure } from "../api/messages";
 import { getPersonaId } from "../auth/token";
 
@@ -28,14 +35,38 @@ function PhotoImage({ blob, alt }: { blob: Blob; alt: string }) {
   return <img ref={ref} alt={alt} />;
 }
 
+/** The destructive action a confirmation dialog is guarding, and its target. */
+type PendingAction =
+  | { kind: "revoke"; member: Member }
+  | { kind: "remove"; member: Member };
+
+/** The copy each confirmation dialog shows; one branch on the action's kind. */
+function confirmationFor(action: PendingAction) {
+  if (action.kind === "revoke") {
+    return {
+      heading: "¿Revocar tu consentimiento?",
+      body: "Tu DNI dejará de ser visible en esta familia. Solo una nueva invitación puede restaurarlo.",
+      confirmLabel: "Confirmar revocación",
+    };
+  }
+  return {
+    heading: `¿Retirar a ${action.member.username}?`,
+    body: "La persona dejará de aparecer en la lista de miembros de esta familia.",
+    confirmLabel: "Confirmar retirada",
+  };
+}
+
 export function FamilyWorkspacePage() {
   const { familyId = "" } = useParams<{ familyId: string }>();
   const [page, setPage] = useState(0);
   const [selected, setSelected] = useState<Member | null>(null);
   const [invite, setInvite] = useState<IssuedInvite | null>(null);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const currentPersonaId = getPersonaId();
+  const queryClient = useQueryClient();
   const dniHeadingRef = useRef<HTMLHeadingElement | null>(null);
+  const confirmRef = useRef<HTMLDialogElement | null>(null);
   // The Family carries the Admin's Persona; only that Persona may issue Invites.
   const familyQuery = useQuery({
     queryKey: ["family", familyId],
@@ -50,6 +81,21 @@ export function FamilyWorkspacePage() {
       setCopyState("idle");
     },
   });
+  // Revoking a Consent and removing a Member are the two guarded destructive
+  // actions; one mutation keeps a single error state and refreshes the list.
+  const actionMutation = useMutation({
+    mutationFn: (action: PendingAction) =>
+      action.kind === "revoke"
+        ? revokeConsent(familyId, action.member.personaId)
+        : removeMember(familyId, action.member.personaId),
+    onSuccess: (_data, action) => {
+      setSelected((current) =>
+        current?.personaId === action.member.personaId ? null : current,
+      );
+      void queryClient.invalidateQueries({ queryKey: ["members", familyId] });
+    },
+  });
+  const actionError = actionMutation.error;
   const membersQuery = useQuery({
     queryKey: ["members", familyId, page],
     queryFn: ({ signal }) => listFamilyMembers(familyId, page, signal),
@@ -83,10 +129,29 @@ export function FamilyWorkspacePage() {
   const dniFailure = dniQuery.error ?? frontPhotoQuery.error ?? backPhotoQuery.error;
   const pageData = membersQuery.data;
   const members = pageData?.content ?? [];
+  const confirmation = pendingAction ? confirmationFor(pendingAction) : null;
 
   useEffect(() => {
     if (selected) dniHeadingRef.current?.focus();
   }, [selected]);
+
+  // Open the native modal as soon as a destructive action is pending. The
+  // browser then provides the top layer, focus containment and Esc dismissal.
+  useEffect(() => {
+    if (!pendingAction) return;
+    const dialog = confirmRef.current;
+    if (dialog && !dialog.open) dialog.showModal();
+  }, [pendingAction]);
+
+  function handleConfirmClose() {
+    const dialog = confirmRef.current;
+    const confirmed = dialog?.returnValue === "confirm";
+    if (dialog) dialog.returnValue = "";
+    const action = pendingAction;
+    setPendingAction(null);
+    if (!confirmed || !action) return;
+    actionMutation.mutate(action);
+  }
 
   function changePage(next: number) {
     setSelected(null);
@@ -114,6 +179,11 @@ export function FamilyWorkspacePage() {
           </button>
         </p>
       )}
+      {actionError && (
+        <p className="form-error" role="alert">
+          {messageForFailure(actionError)}
+        </p>
+      )}
       {pageData && (
         <>
           <div className="member-table-wrapper">
@@ -137,15 +207,36 @@ export function FamilyWorkspacePage() {
                       {member.consentInForce && member.dni ? member.dni : "Sin consentimiento"}
                     </td>
                     <td data-label="Acciones">
-                      {member.consentInForce && (
-                        <button
-                          type="button"
-                          aria-label={`Ver DNI de ${member.username}`}
-                          onClick={() => setSelected(member)}
-                        >
-                          Ver DNI
-                        </button>
-                      )}
+                      <div className="row-actions">
+                        {member.consentInForce && (
+                          <button
+                            type="button"
+                            aria-label={`Ver DNI de ${member.username}`}
+                            onClick={() => setSelected(member)}
+                          >
+                            Ver DNI
+                          </button>
+                        )}
+                        {member.personaId === currentPersonaId && member.consentInForce && (
+                          <button
+                            type="button"
+                            aria-label="Revocar consentimiento"
+                            onClick={() => setPendingAction({ kind: "revoke", member })}
+                          >
+                            Revocar consentimiento
+                          </button>
+                        )}
+                        {isAdmin && member.personaId !== currentPersonaId && (
+                          <button
+                            type="button"
+                            className="danger"
+                            aria-label={`Retirar a ${member.username}`}
+                            onClick={() => setPendingAction({ kind: "remove", member })}
+                          >
+                            Retirar
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -257,6 +348,31 @@ export function FamilyWorkspacePage() {
           )}
         </section>
       )}
+      <dialog
+        ref={confirmRef}
+        className="confirm-dialog"
+        aria-labelledby="confirm-heading"
+        onClose={handleConfirmClose}
+      >
+        {confirmation && (
+          <>
+            <h2 id="confirm-heading">{confirmation.heading}</h2>
+            <p>{confirmation.body}</p>
+            <div className="confirm-actions">
+              <button type="button" onClick={() => confirmRef.current?.close("cancel")}>
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="danger"
+                onClick={() => confirmRef.current?.close("confirm")}
+              >
+                {confirmation.confirmLabel}
+              </button>
+            </div>
+          </>
+        )}
+      </dialog>
     </section>
   );
 }

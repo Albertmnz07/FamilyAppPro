@@ -489,6 +489,72 @@ button:focus-visible {
   }
 }
 
+/* Confirmation dialog and destructive actions: revoking a Consent and removing
+   a Member always pass through the native modal, which supplies the top layer,
+   focus containment and Esc dismissal (spec #14, "Consent UX"). */
+.row-actions {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.member-table button.danger {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+}
+
+dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  background: rgb(0 0 0 / 0.4);
+}
+
+.confirm-dialog {
+  max-width: min(28rem, calc(100vw - 2rem));
+  padding: 1.25rem;
+  background: var(--color-surface);
+  color: inherit;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.confirm-dialog h2 {
+  margin-block: 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.confirm-dialog p {
+  margin-block: 0 1rem;
+}
+
+.confirm-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.confirm-actions button {
+  font: inherit;
+  min-height: 48px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-primary);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.confirm-actions .danger {
+  border-color: var(--color-danger);
+  background: var(--color-danger);
+  color: #ffffff;
+}
+
 /* Hides content visually but keeps it in the accessibility tree. */
 .visually-hidden {
   position: absolute !important;

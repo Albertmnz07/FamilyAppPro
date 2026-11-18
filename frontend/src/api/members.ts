@@ -101,3 +101,28 @@ export async function getDniPhoto(photoUrl: string, signal?: AbortSignal): Promi
     signal,
   });
 }
+
+/**
+ * A Persona revokes its own Consent in a Family, ending Visibility of its DNI;
+ * the backend answers 204 and refuses anyone else's Consent with `forbidden`
+ * (spec #14, "Consent UX").
+ */
+export async function revokeConsent(familyId: string, personaId: string): Promise<void> {
+  await request<void>({
+    method: "DELETE",
+    path: `/families/${encodeURIComponent(familyId)}/members/${encodeURIComponent(personaId)}/consent`,
+    authorized: true,
+  });
+}
+
+/**
+ * The Admin removes an accepted Member; the backend answers 204, refuses a
+ * non-admin with `forbidden` and the Admin itself with `cannot-remove-admin`.
+ */
+export async function removeMember(familyId: string, personaId: string): Promise<void> {
+  await request<void>({
+    method: "DELETE",
+    path: `/families/${encodeURIComponent(familyId)}/members/${encodeURIComponent(personaId)}`,
+    authorized: true,
+  });
+}

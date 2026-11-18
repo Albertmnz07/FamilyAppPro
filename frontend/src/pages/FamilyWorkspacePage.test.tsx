@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router";
@@ -322,5 +322,254 @@ describe("FamilyWorkspacePage invite issuance", () => {
     await user.click(await screen.findByRole("button", { name: "Emitir invitación" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("No tienes permiso para hacer eso.");
+  });
+});
+
+type MemberRecord = {
+  personaId: string;
+  username: string;
+  dni: string | null;
+  admin: boolean;
+  status: string;
+  consentInForce: boolean;
+};
+
+function memberRecord(overrides: Partial<MemberRecord> & { personaId: string; username: string }): MemberRecord {
+  return {
+    dni: null,
+    admin: false,
+    status: "ACCEPTED",
+    consentInForce: false,
+    ...overrides,
+  };
+}
+
+function rowFor(username: RegExp) {
+  const row = screen.getByRole("rowheader", { name: username }).closest("tr");
+  if (!row) throw new Error(`No row for ${username}`);
+  return within(row);
+}
+
+async function findRow(username: RegExp) {
+  const row = (await screen.findByRole("rowheader", { name: username })).closest("tr");
+  if (!row) throw new Error(`No row for ${username}`);
+  return within(row);
+}
+
+/**
+ * A stateful workspace stub: GETs report the current members, and a DELETE
+ * either applies the removal to that state (the happy path) or answers with a
+ * problem the screen must explain.
+ */
+function statefulWorkspace(
+  members: MemberRecord[],
+  deleteResponse?: () => Response,
+): ReturnType<typeof vi.fn> {
+  return vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+    const href = String(url);
+    if (href === familyUrl) return Promise.resolve(familyResponse());
+    if (init?.method === "DELETE") {
+      if (deleteResponse) return Promise.resolve(deleteResponse());
+      const isConsent = href.endsWith("/consent");
+      const personaId = href.split("/members/")[1].replace("/consent", "");
+      const target = members.find((member) => member.personaId === personaId);
+      if (target) {
+        if (isConsent) {
+          target.consentInForce = false;
+          target.dni = null;
+        } else {
+          members.splice(members.indexOf(target), 1);
+        }
+      }
+      return Promise.resolve(new Response(null, { status: 204 }));
+    }
+    return Promise.resolve(memberPage(members));
+  });
+}
+
+function deleteCall(fetchMock: ReturnType<typeof vi.fn>, suffix: string) {
+  return fetchMock.mock.calls.find(
+    ([url, init]) => String(url).endsWith(suffix) && init?.method === "DELETE",
+  );
+}
+
+describe("FamilyWorkspacePage consent revocation", () => {
+  it("revokes the Persona's own Consent only after confirming, then masks the row", async () => {
+    setPersonaId("p1");
+    const members = [
+      memberRecord({ personaId: "p1", username: "ana", dni: "12345678Z", admin: true, consentInForce: true }),
+      memberRecord({ personaId: "p2", username: "beto" }),
+    ];
+    const fetchMock = statefulWorkspace(members);
+    vi.stubGlobal("fetch", fetchMock);
+    renderWorkspace();
+    const user = userEvent.setup();
+
+    const anaRow = await findRow(/ana/);
+    expect(anaRow.getByText("12345678Z")).toBeInTheDocument();
+    expect(rowFor(/beto/).queryByRole("button", { name: "Revocar consentimiento" })).not.toBeInTheDocument();
+
+    await user.click(anaRow.getByRole("button", { name: "Revocar consentimiento" }));
+
+    expect(deleteCall(fetchMock, "/consent")).toBeUndefined();
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByRole("heading", { name: "¿Revocar tu consentimiento?" })).toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole("button", { name: "Confirmar revocación" }));
+
+    await waitFor(() => {
+      const call = deleteCall(fetchMock, "/members/p1/consent");
+      expect(call?.[0]).toBe("http://localhost:8080/api/v1/families/f1/members/p1/consent");
+      expect(call?.[1].headers.get("Authorization")).toBe("Bearer token-1");
+    });
+    expect(await rowFor(/ana/).findByText("Sin consentimiento")).toBeInTheDocument();
+    expect(rowFor(/ana/).queryByText("12345678Z")).not.toBeInTheDocument();
+  });
+
+  it("leaves the Consent untouched when the Persona cancels the confirmation", async () => {
+    setPersonaId("p1");
+    const members = [
+      memberRecord({ personaId: "p1", username: "ana", dni: "12345678Z", admin: true, consentInForce: true }),
+    ];
+    const fetchMock = statefulWorkspace(members);
+    vi.stubGlobal("fetch", fetchMock);
+    renderWorkspace();
+    const user = userEvent.setup();
+
+    await user.click(await screen.findByRole("button", { name: "Revocar consentimiento" }));
+    const dialog = await screen.findByRole("dialog");
+    await user.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(deleteCall(fetchMock, "/consent")).toBeUndefined();
+    expect(rowFor(/ana/).getByText("12345678Z")).toBeInTheDocument();
+  });
+});
+
+describe("FamilyWorkspacePage member removal", () => {
+  const members = () => [
+    memberRecord({ personaId: "p1", username: "ana", dni: "12345678Z", admin: true, consentInForce: true }),
+    memberRecord({ personaId: "p3", username: "carla", consentInForce: true }),
+  ];
+
+  it("removes a member only after confirming, then drops the row", async () => {
+    setPersonaId("p1");
+    const fetchMock = statefulWorkspace(members());
+    vi.stubGlobal("fetch", fetchMock);
+    renderWorkspace();
+    const user = userEvent.setup();
+
+    await user.click((await findRow(/carla/)).getByRole("button", { name: "Retirar a carla" }));
+
+    expect(deleteCall(fetchMock, "/members/p3")).toBeUndefined();
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByRole("heading", { name: "¿Retirar a carla?" })).toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole("button", { name: "Confirmar retirada" }));
+
+    await waitFor(() => {
+      expect(deleteCall(fetchMock, "/members/p3")?.[0]).toBe(
+        "http://localhost:8080/api/v1/families/f1/members/p3",
+      );
+    });
+    await waitFor(() => expect(screen.queryByRole("rowheader", { name: /carla/ })).not.toBeInTheDocument());
+  });
+
+  it("offers the Admin no way to remove its own row", async () => {
+    setPersonaId("p1");
+    vi.stubGlobal("fetch", statefulWorkspace(members()));
+    renderWorkspace();
+
+    await screen.findByRole("rowheader", { name: /ana/ });
+    expect(rowFor(/ana/).queryByRole("button", { name: /Retirar/ })).not.toBeInTheDocument();
+    expect(rowFor(/carla/).getByRole("button", { name: "Retirar a carla" })).toBeInTheDocument();
+  });
+
+  it("explains a cannot-remove-admin refusal in its own words", async () => {
+    setPersonaId("p1");
+    const fetchMock = statefulWorkspace(members(), () =>
+      jsonResponse(
+        { title: "Conflict", status: 409, code: "cannot-remove-admin" },
+        409,
+        "application/problem+json",
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    renderWorkspace();
+    const user = userEvent.setup();
+
+    await user.click((await findRow(/carla/)).getByRole("button", { name: "Retirar a carla" }));
+    await user.click(
+      within(await screen.findByRole("dialog")).getByRole("button", { name: "Confirmar retirada" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "El administrador de la familia no puede ser retirado.",
+    );
+  });
+
+  it("explains a forbidden refusal with a different message", async () => {
+    setPersonaId("p1");
+    const fetchMock = statefulWorkspace(members(), () =>
+      jsonResponse({ title: "Forbidden", status: 403, code: "forbidden" }, 403, "application/problem+json"),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    renderWorkspace();
+    const user = userEvent.setup();
+
+    await user.click((await findRow(/carla/)).getByRole("button", { name: "Retirar a carla" }));
+    await user.click(
+      within(await screen.findByRole("dialog")).getByRole("button", { name: "Confirmar retirada" }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("No tienes permiso para hacer eso.");
+  });
+
+  it("clears a refusal message once a later action succeeds", async () => {
+    setPersonaId("p1");
+    const records = members();
+    let deletes = 0;
+    const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      const href = String(url);
+      if (href === familyUrl) return Promise.resolve(familyResponse());
+      if (init?.method === "DELETE") {
+        deletes += 1;
+        if (deletes === 1) {
+          return Promise.resolve(
+            jsonResponse(
+              { title: "Conflict", status: 409, code: "cannot-remove-admin" },
+              409,
+              "application/problem+json",
+            ),
+          );
+        }
+        const personaId = href.split("/members/")[1].replace("/consent", "");
+        const target = records.find((member) => member.personaId === personaId);
+        if (target) {
+          target.consentInForce = false;
+          target.dni = null;
+        }
+        return Promise.resolve(new Response(null, { status: 204 }));
+      }
+      return Promise.resolve(memberPage(records));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderWorkspace();
+    const user = userEvent.setup();
+
+    await user.click((await findRow(/carla/)).getByRole("button", { name: "Retirar a carla" }));
+    await user.click(
+      within(await screen.findByRole("dialog")).getByRole("button", { name: "Confirmar retirada" }),
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "El administrador de la familia no puede ser retirado.",
+    );
+
+    await user.click(rowFor(/ana/).getByRole("button", { name: "Revocar consentimiento" }));
+    await user.click(
+      within(await screen.findByRole("dialog")).getByRole("button", { name: "Confirmar revocación" }),
+    );
+
+    await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
   });
 });

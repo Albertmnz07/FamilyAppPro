@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { clearToken, setToken } from "../auth/token";
 import { jsonResponse } from "../test/http";
-import { getDniPhoto, getMemberDni, listFamilyMembers } from "./members";
+import { getDniPhoto, getMemberDni, listFamilyMembers, removeMember, revokeConsent } from "./members";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -92,6 +92,36 @@ describe("getMemberDni", () => {
     });
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe("http://localhost:8080/api/v1/families/f1/members/p1/dni");
+    expect(init.headers.get("Authorization")).toBe("Bearer token-1");
+  });
+});
+
+describe("revokeConsent", () => {
+  it("DELETEs the member's consent with the bearer token and reads the empty 204", async () => {
+    setToken("token-1");
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(revokeConsent("f1", "p1")).resolves.toBeUndefined();
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://localhost:8080/api/v1/families/f1/members/p1/consent");
+    expect(init.method).toBe("DELETE");
+    expect(init.headers.get("Authorization")).toBe("Bearer token-1");
+  });
+});
+
+describe("removeMember", () => {
+  it("DELETEs the membership with the bearer token and reads the empty 204", async () => {
+    setToken("token-1");
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(removeMember("f1", "p2")).resolves.toBeUndefined();
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://localhost:8080/api/v1/families/f1/members/p2");
+    expect(init.method).toBe("DELETE");
     expect(init.headers.get("Authorization")).toBe("Bearer token-1");
   });
 });
