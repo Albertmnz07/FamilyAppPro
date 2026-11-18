@@ -73,3 +73,5 @@ A missing, malformed or unknown token returns `401`. Tokens expire after seven d
 | `GET` | `/api/v1/families/{id}/members/{personaId}/dni/{front,back}` | accepted member, consent in force |
 
 Members are listed alphabetically by DNI. Each member exposes its `username` (always) and its `dni` (`null` while that persona's consent is not in force). Errors use `application/problem+json` (RFC 9457) with a `code` property.
+
+`GET /api/v1/me/families` and `GET /api/v1/families/{id}/members` are paginated with Spring's `page`/`size` query parameters (default `page=0`, `size=20`, maximum `size=100`) and return Spring's paged JSON shape (`content`, `totalElements`, `totalPages`, `number`, `size`, …). A `size` above the maximum is clamped to `100` rather than rejected. Ordering is fixed server-side (families by name, members by DNI): the client `sort` parameter is ignored and the paged metadata reports the page as unsorted.

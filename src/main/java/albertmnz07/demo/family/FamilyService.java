@@ -5,6 +5,10 @@ import albertmnz07.demo.family.error.ForbiddenException;
 import albertmnz07.demo.family.error.InviteAlreadyRedeemedException;
 import albertmnz07.demo.family.error.InviteExpiredException;
 import albertmnz07.demo.family.error.NotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
@@ -20,6 +24,7 @@ public class FamilyService {
 
     static final Duration INVITE_TTL = Duration.ofDays(7);
     private static final int MAX_CODE_ATTEMPTS = 10;
+    public static final int MAX_PAGE_SIZE = 100;
 
     private final FamilyRepository families;
     private final InviteRepository invites;
@@ -49,12 +54,12 @@ public class FamilyService {
                 .orElseThrow(() -> new NotFoundException("Family not found: " + id));
     }
 
-    public List<Family> listFamiliesFor(Persona persona) {
-        return memberships.findByPersonaAndStatus(persona, Membership.Status.ACCEPTED).stream()
+    public Page<Family> listFamiliesFor(Persona persona, Pageable pageable) {
+        return page(memberships.findByPersonaAndStatus(persona, Membership.Status.ACCEPTED).stream()
                 .map(Membership::getFamily)
                 .sorted(Comparator.comparing(Family::getName,
                         Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
-                .toList();
+                .toList(), pageable);
     }
 
     public List<Membership> listAcceptedMembers(Family family) {
@@ -62,6 +67,20 @@ public class FamilyService {
                 .sorted(Comparator.comparing(membership -> membership.getPersona().getDni(),
                         String.CASE_INSENSITIVE_ORDER))
                 .toList();
+    }
+
+    public Page<Membership> listAcceptedMembers(Family family, Pageable pageable) {
+        return page(listAcceptedMembers(family), pageable);
+    }
+
+    private static <T> Page<T> page(List<T> sorted, Pageable pageable) {
+        // Ordering is fixed server-side and the page size is capped, so rebind the
+        // pageable (unsorted, bounded) instead of echoing the client's request.
+        Pageable bounded = PageRequest.of(pageable.getPageNumber(),
+                Math.min(pageable.getPageSize(), MAX_PAGE_SIZE));
+        int start = (int) Math.min(bounded.getOffset(), sorted.size());
+        int end = Math.min(start + bounded.getPageSize(), sorted.size());
+        return new PageImpl<>(sorted.subList(start, end), bounded, sorted.size());
     }
 
     public boolean isAcceptedMember(Family family, Persona persona) {
