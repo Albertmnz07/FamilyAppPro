@@ -1,5 +1,6 @@
 package albertmnz07.demo.family;
 
+import albertmnz07.demo.family.error.PhotoTooLargeException;
 import albertmnz07.demo.family.error.UnsupportedPhotoTypeException;
 import org.junit.jupiter.api.Test;
 
@@ -19,7 +20,7 @@ class PersonaServicePhotoTest {
     @Test
     void rejectsAPhotoAboveTheTenMegabyteLimit() {
         assertThatThrownBy(() -> PersonaService.validatePhoto(new byte[TEN_MB + 1], "image/png", "back"))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(PhotoTooLargeException.class)
                 .hasMessageContaining("10 MB");
     }
 

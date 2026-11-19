@@ -15,17 +15,21 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import java.time.Instant;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -37,6 +41,8 @@ class ApiIntegrationTest {
 
     private static final String AUTH = "Authorization";
     private static final String PASSWORD = "password123";
+    private static final String PHOTOS_PATH = "/api/v1/personas/me/dni/photos";
+    private static final int TEN_MB = 10 * 1024 * 1024;
 
     private static final String ADMIN_DNI = "12345678Z";
     private static final String MEMBER_DNI = "11111111H";
@@ -126,6 +132,100 @@ class ApiIntegrationTest {
         mvc.perform(registerRequest("mixed-case-user", "  abc-123  "))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.dni").value("ABC-123"));
+    }
+
+    @Test
+    void uploadsOneDniPhotoSideAndLeavesTheOtherAbsent() throws Exception {
+        registerPersona(ADMIN_DNI);
+
+        mvc.perform(multipart(HttpMethod.PUT, PHOTOS_PATH)
+                .header(AUTH, bearer(ADMIN_DNI))
+                .file(photo("frontPhoto", "image/jpeg", (byte) 1)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.frontPhotoUrl").value("/api/v1/personas/me/photos/front"))
+                .andExpect(jsonPath("$.backPhotoUrl").value(nullValue()));
+
+        mvc.perform(get("/api/v1/personas/me/photos/back").header(AUTH, bearer(ADMIN_DNI)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void uploadsBothDniPhotoSides() throws Exception {
+        registerPersona(ADMIN_DNI);
+
+        mvc.perform(multipart(HttpMethod.PUT, PHOTOS_PATH)
+                .header(AUTH, bearer(ADMIN_DNI))
+                .file(photo("frontPhoto", "image/jpeg", (byte) 1))
+                .file(photo("backPhoto", "image/png", (byte) 2)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.frontPhotoUrl").value("/api/v1/personas/me/photos/front"))
+                .andExpect(jsonPath("$.backPhotoUrl").value("/api/v1/personas/me/photos/back"));
+
+        mvc.perform(get("/api/v1/personas/me/photos/front").header(AUTH, bearer(ADMIN_DNI)))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "image/jpeg"));
+        mvc.perform(get("/api/v1/personas/me/photos/back").header(AUTH, bearer(ADMIN_DNI)))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Content-Type", "image/png"));
+    }
+
+    @Test
+    void uploadingOneSidePreservesTheOther() throws Exception {
+        registerPersona(ADMIN_DNI);
+        mvc.perform(multipart(HttpMethod.PUT, PHOTOS_PATH)
+                .header(AUTH, bearer(ADMIN_DNI))
+                .file(photo("frontPhoto", "image/jpeg", (byte) 1)))
+                .andExpect(status().isOk());
+
+        mvc.perform(multipart(HttpMethod.PUT, PHOTOS_PATH)
+                .header(AUTH, bearer(ADMIN_DNI))
+                .file(photo("backPhoto", "image/png", (byte) 2)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.frontPhotoUrl").value("/api/v1/personas/me/photos/front"))
+                .andExpect(jsonPath("$.backPhotoUrl").value("/api/v1/personas/me/photos/back"));
+    }
+
+    @Test
+    void rejectsAnOversizedPhotoWithoutDiscardingTheOtherSide() throws Exception {
+        registerPersona(ADMIN_DNI);
+        byte[] originalFront = {1, 1, 1};
+        mvc.perform(multipart(HttpMethod.PUT, PHOTOS_PATH)
+                .header(AUTH, bearer(ADMIN_DNI))
+                .file(new MockMultipartFile("frontPhoto", "front.jpg", "image/jpeg", originalFront)))
+                .andExpect(status().isOk());
+
+        mvc.perform(multipart(HttpMethod.PUT, PHOTOS_PATH)
+                .header(AUTH, bearer(ADMIN_DNI))
+                .file(new MockMultipartFile("frontPhoto", "front.jpg", "image/jpeg", new byte[] {2, 2, 2}))
+                .file(new MockMultipartFile("backPhoto", "back.jpg", "image/jpeg", new byte[TEN_MB + 1])))
+                .andExpect(status().is(413))
+                .andExpect(jsonPath("$.code").value("photo-too-large"));
+
+        MvcResult storedFront = mvc.perform(get("/api/v1/personas/me/photos/front").header(AUTH, bearer(ADMIN_DNI)))
+                .andExpect(status().isOk())
+                .andReturn();
+        assertThat(storedFront.getResponse().getContentAsByteArray()).isEqualTo(originalFront);
+        mvc.perform(get("/api/v1/personas/me/photos/back").header(AUTH, bearer(ADMIN_DNI)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void rejectsAnUnsupportedDniPhotoType() throws Exception {
+        registerPersona(ADMIN_DNI);
+
+        mvc.perform(multipart(HttpMethod.PUT, PHOTOS_PATH)
+                .header(AUTH, bearer(ADMIN_DNI))
+                .file(new MockMultipartFile("frontPhoto", "notes.pdf", "application/pdf", new byte[] {1})))
+                .andExpect(status().isUnsupportedMediaType())
+                .andExpect(jsonPath("$.code").value("unsupported-photo-type"));
+    }
+
+    @Test
+    void uploadingDniPhotosRequiresAuthentication() throws Exception {
+        mvc.perform(multipart(HttpMethod.PUT, PHOTOS_PATH)
+                .file(photo("frontPhoto", "image/jpeg", (byte) 1)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("unauthorized"));
     }
 
     @Test
@@ -495,6 +595,20 @@ class ApiIntegrationTest {
                 .header("Access-Control-Request-Method", "POST"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"));
+    }
+
+    @Test
+    void allowsCorsPutForDniPhotoUploads() throws Exception {
+        mvc.perform(options(PHOTOS_PATH)
+                .header("Origin", "http://localhost:5173")
+                .header("Access-Control-Request-Method", "PUT"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"))
+                .andExpect(header().string("Access-Control-Allow-Methods", containsString("PUT")));
+    }
+
+    private MockMultipartFile photo(String part, String contentType, byte fill) {
+        return new MockMultipartFile(part, part + ".jpg", contentType, new byte[] {fill, fill, fill});
     }
 
     private org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder registerRequest(
