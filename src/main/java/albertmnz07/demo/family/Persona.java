@@ -101,4 +101,14 @@ public class Persona {
     public Dni dniEntity() {
         return new Dni(dni, frontPhotoKey, frontPhotoContentType, backPhotoKey, backPhotoContentType);
     }
+
+    public void changeFrontPhoto(String key, String contentType) {
+        this.frontPhotoKey = key;
+        this.frontPhotoContentType = contentType;
+    }
+
+    public void changeBackPhoto(String key, String contentType) {
+        this.backPhotoKey = key;
+        this.backPhotoContentType = contentType;
+    }
 }

@@ -4,6 +4,8 @@ import albertmnz07.demo.family.Persona;
 import albertmnz07.demo.family.PersonaService;
 import albertmnz07.demo.family.error.NotFoundException;
 import albertmnz07.demo.family.photo.PhotoStore;
+import albertmnz07.demo.family.photo.PhotoUpload;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -14,10 +16,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/v1/personas")
@@ -50,6 +55,22 @@ public class PersonaController {
     @GetMapping("/me")
     public PersonaResponse me(@ActingPersona Persona persona) {
         return PersonaResponse.of(persona);
+    }
+
+    @PutMapping(value = "/me/dni/photos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public PersonaResponse updateDniPhotos(
+            @Parameter(hidden = true) @ActingPersona Persona persona,
+            @RequestParam(required = false) MultipartFile frontPhoto,
+            @RequestParam(required = false) MultipartFile backPhoto) throws IOException {
+        return PersonaResponse.of(personas.updateDniPhotos(persona, uploadOf(frontPhoto), uploadOf(backPhoto)));
+    }
+
+    /** An omitted or empty part means "leave this side as it is". */
+    private static PhotoUpload uploadOf(MultipartFile part) throws IOException {
+        if (part == null || part.isEmpty()) {
+            return null;
+        }
+        return new PhotoUpload(part.getBytes(), part.getContentType());
     }
 
     @GetMapping("/me/photos/front")

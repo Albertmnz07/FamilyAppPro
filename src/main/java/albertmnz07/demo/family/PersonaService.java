@@ -4,8 +4,10 @@ import albertmnz07.demo.family.auth.PasswordHasher;
 import albertmnz07.demo.family.error.DuplicateDniException;
 import albertmnz07.demo.family.error.DuplicateUsernameException;
 import albertmnz07.demo.family.error.NotFoundException;
+import albertmnz07.demo.family.error.PhotoTooLargeException;
 import albertmnz07.demo.family.error.UnsupportedPhotoTypeException;
 import albertmnz07.demo.family.photo.PhotoStore;
+import albertmnz07.demo.family.photo.PhotoUpload;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.Locale;
@@ -49,6 +51,28 @@ public class PersonaService {
                 .orElseThrow(() -> new NotFoundException("Persona not found: " + id));
     }
 
+    /**
+     * Uploads or replaces the acting Persona's optional DNI photos. Each side is
+     * independent: an absent side is left as it was. Both sides are validated
+     * before either is stored, so a rejected side leaves the other untouched.
+     */
+    @Transactional
+    public Persona updateDniPhotos(Persona persona, PhotoUpload front, PhotoUpload back) {
+        if (front != null) {
+            validatePhoto(front.content(), front.contentType(), "front");
+        }
+        if (back != null) {
+            validatePhoto(back.content(), back.contentType(), "back");
+        }
+        if (front != null) {
+            persona.changeFrontPhoto(photos.put(front.content()), front.contentType());
+        }
+        if (back != null) {
+            persona.changeBackPhoto(photos.put(back.content()), back.contentType());
+        }
+        return personas.save(persona);
+    }
+
     private String normalizeDni(String rawDni) {
         return rawDni.trim().toUpperCase(Locale.ROOT);
     }
@@ -73,7 +97,7 @@ public class PersonaService {
             throw new IllegalArgumentException("The " + side + " photo is required");
         }
         if (photo.length > MAX_PHOTO_BYTES) {
-            throw new IllegalArgumentException("The " + side + " photo exceeds 10 MB");
+            throw new PhotoTooLargeException("The " + side + " photo exceeds 10 MB");
         }
         if (contentType == null || !ALLOWED_PHOTO_TYPES.contains(contentType.toLowerCase(Locale.ROOT))) {
             throw new UnsupportedPhotoTypeException(

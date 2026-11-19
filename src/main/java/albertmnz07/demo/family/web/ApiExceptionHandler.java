@@ -7,6 +7,7 @@ import albertmnz07.demo.family.error.ForbiddenException;
 import albertmnz07.demo.family.error.InviteAlreadyRedeemedException;
 import albertmnz07.demo.family.error.InviteExpiredException;
 import albertmnz07.demo.family.error.NotFoundException;
+import albertmnz07.demo.family.error.PhotoTooLargeException;
 import albertmnz07.demo.family.error.UnauthorizedException;
 import albertmnz07.demo.family.error.UnsupportedPhotoTypeException;
 import jakarta.validation.ConstraintViolationException;
@@ -70,6 +71,12 @@ public class ApiExceptionHandler {
     public ProblemDetail unsupportedPhotoType(UnsupportedPhotoTypeException ex) {
         return problem(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Unsupported media type", ex.getMessage(),
                 "unsupported-photo-type");
+    }
+
+    @ExceptionHandler(PhotoTooLargeException.class)
+    public ProblemDetail photoTooLarge(PhotoTooLargeException ex) {
+        return problem(HttpStatus.PAYLOAD_TOO_LARGE, "Payload too large", ex.getMessage(),
+                "photo-too-large");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
