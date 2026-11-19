@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router";
@@ -69,7 +69,8 @@ beforeEach(() => {
   createObjectURL = vi
     .fn()
     .mockReturnValueOnce("blob:front")
-    .mockReturnValueOnce("blob:back");
+    .mockReturnValueOnce("blob:back")
+    .mockReturnValue("blob:photo");
   revokeObjectURL = vi.fn();
   Object.defineProperty(URL, "createObjectURL", { configurable: true, value: createObjectURL });
   Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: revokeObjectURL });
@@ -607,5 +608,116 @@ describe("FamilyWorkspacePage member removal", () => {
     );
 
     await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
+  });
+});
+
+describe("FamilyWorkspacePage DNI photos", () => {
+  function workspaceWithDni(dni: Record<string, unknown>) {
+    return vi.fn().mockImplementation(
+      routed((url) => {
+        if (url.endsWith("/dni/front") || url.endsWith("/dni/back")) {
+          return new Response(new Blob(["photo"], { type: "image/png" }), { status: 200 });
+        }
+        if (url.endsWith("/dni")) {
+          return jsonResponse({ personaId: "p1", ...dni });
+        }
+        return memberPage([ana]);
+      }),
+    );
+  }
+
+  function photoCalls(fetchMock: ReturnType<typeof vi.fn>) {
+    return fetchMock.mock.calls.filter(([url]) => /\/dni\/(front|back)$/.test(String(url)));
+  }
+
+  async function openDni() {
+    const user = userEvent.setup();
+    await user.click(await screen.findByRole("button", { name: "Ver DNI de ana" }));
+    return user;
+  }
+
+  it("enlarges a photo in a modal and closes it with the cross", async () => {
+    const fetchMock = workspaceWithDni({
+      number: "12345678Z",
+      frontPhotoUrl: "/api/v1/families/f1/members/p1/dni/front",
+      backPhotoUrl: "/api/v1/families/f1/members/p1/dni/back",
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderWorkspace();
+    const user = await openDni();
+
+    await user.click(await screen.findByRole("img", { name: "Foto delantera del DNI de ana" }));
+
+    const dialog = await screen.findByRole("dialog");
+    expect(
+      within(dialog).getByRole("img", { name: "Foto delantera del DNI de ana" }),
+    ).toBeInTheDocument();
+    expect(dialog).toHaveAttribute("closedby", "any");
+
+    await user.click(within(dialog).getByRole("button", { name: "Cerrar" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  });
+
+  it("closes the enlarged photo when the area outside it is tapped", async () => {
+    const fetchMock = workspaceWithDni({
+      number: "12345678Z",
+      frontPhotoUrl: "/api/v1/families/f1/members/p1/dni/front",
+      backPhotoUrl: null,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderWorkspace();
+    const user = await openDni();
+
+    await user.click(await screen.findByRole("img", { name: "Foto delantera del DNI de ana" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(dialog);
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  });
+
+  it("closes the enlarged photo on Escape", async () => {
+    const fetchMock = workspaceWithDni({
+      number: "12345678Z",
+      frontPhotoUrl: "/api/v1/families/f1/members/p1/dni/front",
+      backPhotoUrl: null,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderWorkspace();
+    const user = await openDni();
+
+    await user.click(await screen.findByRole("img", { name: "Foto delantera del DNI de ana" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent(dialog, new Event("cancel"));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  });
+
+  it("shows the number and 'Sin fotos del DNI' without requesting any photo", async () => {
+    const fetchMock = workspaceWithDni({ number: "12345678Z", frontPhotoUrl: null, backPhotoUrl: null });
+    vi.stubGlobal("fetch", fetchMock);
+    renderWorkspace();
+    await openDni();
+
+    const dniView = await screen.findByRole("region", { name: "DNI de ana" });
+    expect(within(dniView).getByText("Sin fotos del DNI")).toBeInTheDocument();
+    expect(within(dniView).queryByRole("img")).not.toBeInTheDocument();
+    expect(within(dniView).queryByRole("button", { name: /Ampliar/ })).not.toBeInTheDocument();
+    expect(photoCalls(fetchMock)).toHaveLength(0);
+  });
+
+  it("shows and enlarges only the side that has a photo", async () => {
+    const fetchMock = workspaceWithDni({
+      number: "12345678Z",
+      frontPhotoUrl: "/api/v1/families/f1/members/p1/dni/front",
+      backPhotoUrl: null,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderWorkspace();
+    await openDni();
+
+    expect(await screen.findByRole("img", { name: "Foto delantera del DNI de ana" })).toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: "Foto trasera del DNI de ana" })).not.toBeInTheDocument();
+    expect(photoCalls(fetchMock)).toHaveLength(1);
+    expect(String(photoCalls(fetchMock)[0][0])).toContain("/dni/front");
   });
 });
