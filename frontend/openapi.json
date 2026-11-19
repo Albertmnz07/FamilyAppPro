@@ -709,10 +709,16 @@
             "type": "string"
           },
           "frontPhotoUrl": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "backPhotoUrl": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       },
@@ -1027,10 +1033,16 @@
             "type": "string"
           },
           "frontPhotoUrl": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           },
           "backPhotoUrl": {
-            "type": "string"
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       }
