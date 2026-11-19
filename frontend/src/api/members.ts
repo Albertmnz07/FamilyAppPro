@@ -19,9 +19,9 @@ export type Member = {
 
 export type Dni = {
   number: string;
-  /** Relative URL served by the backend; used as-is (spec #14, "Photos"). */
-  frontPhotoUrl: string;
-  backPhotoUrl: string;
+  /** Relative URL served by the backend; null until that side is uploaded (spec #26). */
+  frontPhotoUrl: string | null;
+  backPhotoUrl: string | null;
 };
 
 export const MEMBER_PAGE_SIZE = 20;
@@ -74,18 +74,21 @@ export async function getMemberDni(
     authorized: true,
     signal,
   });
-  if (
-    typeof payload.number !== "string" ||
-    typeof payload.frontPhotoUrl !== "string" ||
-    typeof payload.backPhotoUrl !== "string"
-  ) {
+  if (typeof payload.number !== "string") {
     throw new InvalidDniError("The DNI response is missing required fields");
   }
   return {
     number: payload.number,
-    frontPhotoUrl: payload.frontPhotoUrl,
-    backPhotoUrl: payload.backPhotoUrl,
+    frontPhotoUrl: toPhotoUrl(payload.frontPhotoUrl),
+    backPhotoUrl: toPhotoUrl(payload.backPhotoUrl),
   };
+}
+
+/** A photo URL is a relative string or explicit null; anything else is a broken response. */
+function toPhotoUrl(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "string") return value;
+  throw new InvalidDniError("The DNI response has an invalid photo URL");
 }
 
 /**

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { clearToken, setToken } from "../auth/token";
 import { jsonResponse } from "../test/http";
-import { getDniPhoto, getMemberDni, listFamilyMembers, removeMember, revokeConsent } from "./members";
+import { getDniPhoto, getMemberDni, InvalidDniError, listFamilyMembers, removeMember, revokeConsent } from "./members";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -93,6 +93,28 @@ describe("getMemberDni", () => {
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe("http://localhost:8080/api/v1/families/f1/members/p1/dni");
     expect(init.headers.get("Authorization")).toBe("Bearer token-1");
+  });
+
+  it("reads null photo URLs when the Persona has uploaded no photos", async () => {
+    setToken("token-1");
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({ personaId: "p1", number: "12345678Z", frontPhotoUrl: null, backPhotoUrl: null }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const dni = await getMemberDni("f1", "p1");
+
+    expect(dni).toEqual({ number: "12345678Z", frontPhotoUrl: null, backPhotoUrl: null });
+  });
+
+  it("rejects a DNI response whose photo URL is not a string", async () => {
+    setToken("token-1");
+    const fetchMock = vi.fn().mockResolvedValue(
+      jsonResponse({ personaId: "p1", number: "12345678Z", frontPhotoUrl: 42, backPhotoUrl: null }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(getMemberDni("f1", "p1")).rejects.toBeInstanceOf(InvalidDniError);
   });
 });
 

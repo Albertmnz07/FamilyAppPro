@@ -421,6 +421,57 @@ button:focus-visible {
   text-align: center;
 }
 
+/* Enlarging a DNI photo: the thumbnail is a button that opens a native modal
+   showing one image, closable with the cross, a tap outside or Escape. */
+.no-photos {
+  margin: 0.5rem 0 0;
+  color: var(--color-ink-soft);
+}
+
+.photo-button {
+  display: block;
+  inline-size: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+
+.photo-lightbox {
+  width: auto;
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.photo-lightbox img {
+  display: block;
+  max-width: min(100vw - 1rem, 48rem);
+  max-height: 90dvh;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.lightbox-close {
+  position: fixed;
+  inset-block-start: 0.5rem;
+  inset-inline-end: 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  min-height: 48px;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
 /* Invite issuance: the Admin's action, the code and its expiry in local time. */
 .invite-issuance {
   display: grid;

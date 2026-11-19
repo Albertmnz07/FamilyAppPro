@@ -19,8 +19,11 @@ function formatInviteExpiry(expiresAt: string): string {
   return new Date(expiresAt).toLocaleString("es-ES", { dateStyle: "long", timeStyle: "short" });
 }
 
+/** One photo with its descriptive alt text; the unit the thumbnail and the lightbox share. */
+type Photo = { blob: Blob; alt: string };
+
 /** Syncs fetched photo bytes to the DOM and releases the object URL on change. */
-function PhotoImage({ blob, alt }: { blob: Blob; alt: string }) {
+function PhotoImage({ blob, alt }: Photo) {
   const ref = useRef<HTMLImageElement | null>(null);
   useEffect(() => {
     const element = ref.current;
@@ -33,6 +36,43 @@ function PhotoImage({ blob, alt }: { blob: Blob; alt: string }) {
     };
   }, [blob]);
   return <img ref={ref} alt={alt} />;
+}
+
+/** One side of the DNI: its caption, its fetched photo and the button that enlarges it. */
+function DniPhotoFigure({
+  alt,
+  caption,
+  photo,
+  failed,
+  onOpen,
+}: {
+  alt: string;
+  caption: string;
+  photo: Blob | undefined;
+  failed: boolean;
+  onOpen: (photo: Photo) => void;
+}) {
+  return (
+    <figure>
+      {photo ? (
+        <button
+          type="button"
+          className="photo-button"
+          aria-label={`Ampliar ${alt}`}
+          onClick={() => onOpen({ blob: photo, alt })}
+        >
+          <PhotoImage blob={photo} alt={alt} />
+        </button>
+      ) : (
+        !failed && (
+          <p className="loading" role="status">
+            Cargando fotos…
+          </p>
+        )
+      )}
+      <figcaption>{caption}</figcaption>
+    </figure>
+  );
 }
 
 /** The destructive action a confirmation dialog is guarding, and its target. */
@@ -63,10 +103,12 @@ export function FamilyWorkspacePage() {
   const [invite, setInvite] = useState<IssuedInvite | null>(null);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [lightbox, setLightbox] = useState<Photo | null>(null);
   const currentPersonaId = getPersonaId();
   const queryClient = useQueryClient();
   const dniHeadingRef = useRef<HTMLHeadingElement | null>(null);
   const confirmRef = useRef<HTMLDialogElement | null>(null);
+  const lightboxRef = useRef<HTMLDialogElement | null>(null);
   // The Family carries the Admin's Persona; only that Persona may issue Invites.
   const familyQuery = useQuery({
     queryKey: ["family", familyId],
@@ -108,15 +150,15 @@ export function FamilyWorkspacePage() {
     },
     enabled: selected !== null,
   });
-  const frontPhotoUrl = dniQuery.data?.frontPhotoUrl;
-  const backPhotoUrl = dniQuery.data?.backPhotoUrl;
+  const frontPhotoUrl = dniQuery.data?.frontPhotoUrl ?? null;
+  const backPhotoUrl = dniQuery.data?.backPhotoUrl ?? null;
   const frontPhotoQuery = useQuery({
     queryKey: ["dni-photo", familyId, selected?.personaId, "front", frontPhotoUrl],
     queryFn: ({ signal }) => {
       if (!frontPhotoUrl) throw new Error("No front photo URL");
       return getDniPhoto(frontPhotoUrl, signal);
     },
-    enabled: frontPhotoUrl !== undefined,
+    enabled: frontPhotoUrl !== null,
   });
   const backPhotoQuery = useQuery({
     queryKey: ["dni-photo", familyId, selected?.personaId, "back", backPhotoUrl],
@@ -124,8 +166,10 @@ export function FamilyWorkspacePage() {
       if (!backPhotoUrl) throw new Error("No back photo URL");
       return getDniPhoto(backPhotoUrl, signal);
     },
-    enabled: backPhotoUrl !== undefined,
+    enabled: backPhotoUrl !== null,
   });
+  const frontBlob = frontPhotoQuery.data;
+  const backBlob = backPhotoQuery.data;
   const dniFailure = dniQuery.error ?? frontPhotoQuery.error ?? backPhotoQuery.error;
   const pageData = membersQuery.data;
   const members = pageData?.content ?? [];
@@ -149,6 +193,14 @@ export function FamilyWorkspacePage() {
     const dialog = confirmRef.current;
     if (dialog && !dialog.open) dialog.showModal();
   }, [pendingAction]);
+
+  // Open the lightbox as soon as a photo is chosen; the native modal supplies
+  // the top layer, focus containment and Esc dismissal.
+  useEffect(() => {
+    if (!lightbox) return;
+    const dialog = lightboxRef.current;
+    if (dialog && !dialog.open) dialog.showModal();
+  }, [lightbox]);
 
   function handleConfirmClose() {
     const dialog = confirmRef.current;
@@ -345,29 +397,29 @@ export function FamilyWorkspacePage() {
               <p>
                 <strong>Número de DNI:</strong> {dniQuery.data.number}
               </p>
-              {frontPhotoQuery.data && backPhotoQuery.data ? (
-                <div className="dni-photos">
-                  <figure>
-                    <PhotoImage
-                      blob={frontPhotoQuery.data}
-                      alt={`Foto delantera del DNI de ${selected.username}`}
-                    />
-                    <figcaption>Anverso</figcaption>
-                  </figure>
-                  <figure>
-                    <PhotoImage
-                      blob={backPhotoQuery.data}
-                      alt={`Foto trasera del DNI de ${selected.username}`}
-                    />
-                    <figcaption>Reverso</figcaption>
-                  </figure>
-                </div>
+              {frontPhotoUrl === null && backPhotoUrl === null ? (
+                <p className="no-photos">Sin fotos del DNI</p>
               ) : (
-                !dniFailure && (
-                  <p className="loading" role="status">
-                    Cargando fotos…
-                  </p>
-                )
+                <div className="dni-photos">
+                  {frontPhotoUrl !== null && (
+                    <DniPhotoFigure
+                      alt={`Foto delantera del DNI de ${selected.username}`}
+                      caption="Anverso"
+                      photo={frontBlob}
+                      failed={Boolean(dniFailure)}
+                      onOpen={setLightbox}
+                    />
+                  )}
+                  {backPhotoUrl !== null && (
+                    <DniPhotoFigure
+                      alt={`Foto trasera del DNI de ${selected.username}`}
+                      caption="Reverso"
+                      photo={backBlob}
+                      failed={Boolean(dniFailure)}
+                      onOpen={setLightbox}
+                    />
+                  )}
+                </div>
               )}
             </>
           )}
@@ -395,6 +447,31 @@ export function FamilyWorkspacePage() {
                 {confirmation.confirmLabel}
               </button>
             </div>
+          </>
+        )}
+      </dialog>
+      <dialog
+        ref={lightboxRef}
+        className="photo-lightbox"
+        aria-label="Foto del DNI ampliada"
+        closedby="any"
+        onClick={(event) => {
+          if (event.target === lightboxRef.current) lightboxRef.current?.close();
+        }}
+        onCancel={() => lightboxRef.current?.close()}
+        onClose={() => setLightbox(null)}
+      >
+        {lightbox && (
+          <>
+            <button
+              type="button"
+              className="lightbox-close"
+              aria-label="Cerrar"
+              onClick={() => lightboxRef.current?.close()}
+            >
+              <span aria-hidden="true">×</span>
+            </button>
+            <PhotoImage blob={lightbox.blob} alt={lightbox.alt} />
           </>
         )}
       </dialog>
