@@ -5,8 +5,16 @@ Single-context glossary for the family app: how the domain names people, familie
 ## Language
 
 **Persona**:
-A person identified by a unique DNI, owning the DNI number and front/back photos as a single entity. A persona can belong to multiple families.
+A person identified by a unique DNI number. A persona can belong to multiple families.
 _Avoid_: User, Account
+
+**DNI**:
+The unique number that identifies a Persona. Required at registration, normalized to uppercase and never edited.
+_Avoid_: DNI number, Identity number
+
+**DNI photos**:
+Optional front and back images evidencing a Persona's DNI, uploaded after registration. They are shared only while Consent is in force.
+_Avoid_: DNI document, ID images
 
 **Username**:
 A persona's unique, lowercase handle (3–30 letters, digits, dots, underscores or hyphens), used to recognise the persona inside families independently of their DNI.
@@ -25,11 +33,11 @@ The link between a persona and a family, with lifecycle `accepted → removed`; 
 _Avoid_: Relationship, Link
 
 **Consent**:
-A persona's grant to a family to share the persona's entity (DNI number plus front/back photos). Held per family, withheld by default, revocable immediately, re-grantable on re-acceptance.
+A persona's grant to a family to share the persona's DNI number and any DNI photos. Held per family, withheld by default, revocable immediately, re-grantable on re-acceptance.
 _Avoid_: Sharing, Grant
 
 **Visibility**:
-A current member's ability to see a member's DNI entity, active only while consent is in force.
+A current member's ability to see a member's DNI number and any DNI photos, active only while Consent is in force.
 _Avoid_: Look
 
 **Invite**:

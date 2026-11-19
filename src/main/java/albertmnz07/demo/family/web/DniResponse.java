@@ -11,6 +11,8 @@ public record DniResponse(
 
     public static DniResponse of(UUID familyId, UUID personaId, Dni dni) {
         String base = "/api/v1/families/" + familyId + "/members/" + personaId + "/dni";
-        return new DniResponse(personaId, dni.number(), base + "/front", base + "/back");
+        return new DniResponse(personaId, dni.number(),
+                dni.hasFrontPhoto() ? base + "/front" : null,
+                dni.hasBackPhoto() ? base + "/back" : null);
     }
 }

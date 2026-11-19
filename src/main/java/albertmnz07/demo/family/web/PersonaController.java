@@ -4,7 +4,6 @@ import albertmnz07.demo.family.Persona;
 import albertmnz07.demo.family.PersonaService;
 import albertmnz07.demo.family.error.NotFoundException;
 import albertmnz07.demo.family.photo.PhotoStore;
-import albertmnz07.demo.family.validation.ValidDni;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -17,11 +16,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
-import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/v1/personas")
@@ -43,16 +39,12 @@ public class PersonaController {
             @RequestParam @NotBlank @Pattern(
                     regexp = "[A-Za-z0-9._-]{3,30}",
                     message = "must be 3-30 characters: letters, digits, dots, underscores or hyphens") String username,
-            @RequestParam @NotBlank @ValidDni String dni,
+            @RequestParam @NotBlank String dni,
             @RequestParam @NotBlank @Size(
                     min = 8,
                     max = 100,
-                    message = "must be 8-100 characters") String password,
-            @RequestPart("frontPhoto") MultipartFile frontPhoto,
-            @RequestPart("backPhoto") MultipartFile backPhoto) throws IOException {
-        Persona persona = personas.register(username, dni, password, frontPhoto.getBytes(),
-                frontPhoto.getContentType(), backPhoto.getBytes(), backPhoto.getContentType());
-        return PersonaResponse.of(persona);
+                    message = "must be 8-100 characters") String password) {
+        return PersonaResponse.of(personas.register(username, dni, password));
     }
 
     @GetMapping("/me")

@@ -58,6 +58,15 @@ class SchemaMigrationTest {
     }
 
     @Test
+    void dniPhotoColumnsAreOptionalButTheDniIsStillRequired() throws SQLException {
+        assertThat(nullableOf("persona", "dni")).isEqualTo("NO");
+        assertThat(nullableOf("persona", "front_photo_key")).isEqualTo("YES");
+        assertThat(nullableOf("persona", "front_photo_content_type")).isEqualTo("YES");
+        assertThat(nullableOf("persona", "back_photo_key")).isEqualTo("YES");
+        assertThat(nullableOf("persona", "back_photo_content_type")).isEqualTo("YES");
+    }
+
+    @Test
     void theApplicationNeverChangesTheSchemaByItself() {
         assertThat(environment.getProperty("spring.jpa.hibernate.ddl-auto")).isEqualTo("validate");
         assertThat(declaredDdlAutoValues()).doesNotContain("update");
@@ -91,8 +100,10 @@ class SchemaMigrationTest {
         assertThat(legacyJdbc.queryForList(
                 "select type || '|' || version from flyway_schema_history "
                         + "where success = true order by installed_rank", String.class))
-                .contains("BASELINE|1", "SQL|2");
+                .contains("BASELINE|1", "SQL|2", "SQL|3");
         assertThat(columnsOf(legacyJdbc, "persona")).doesNotContain("front_photo", "back_photo");
+        assertThat(nullableOf(legacyJdbc, "persona", "front_photo_content_type")).isEqualTo("YES");
+        assertThat(nullableOf(legacyJdbc, "persona", "back_photo_content_type")).isEqualTo("YES");
         assertThat(legacyJdbc.queryForObject("select dni from persona where username = 'legacy'", String.class))
                 .isEqualTo("12345678Z");
     }
@@ -123,6 +134,19 @@ class SchemaMigrationTest {
 
     private List<String> columnsOf(String table) throws SQLException {
         return columnsOf(jdbc, table);
+    }
+
+    private String nullableOf(String table, String column) throws SQLException {
+        return nullableOf(jdbc, table, column);
+    }
+
+    private String nullableOf(JdbcTemplate jdbcTemplate, String table, String column) throws SQLException {
+        return jdbcTemplate.execute((ConnectionCallback<String>) connection -> {
+            try (ResultSet resultSet = connection.getMetaData().getColumns(null, null, table, column)) {
+                resultSet.next();
+                return resultSet.getString("IS_NULLABLE");
+            }
+        });
     }
 
     private List<String> columnsOf(JdbcTemplate jdbcTemplate, String table) throws SQLException {

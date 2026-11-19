@@ -6,4 +6,12 @@ public record Dni(
         String frontPhotoContentType,
         String backPhotoKey,
         String backPhotoContentType) {
+
+    public boolean hasFrontPhoto() {
+        return frontPhotoKey != null && !frontPhotoKey.isBlank();
+    }
+
+    public boolean hasBackPhoto() {
+        return backPhotoKey != null && !backPhotoKey.isBlank();
+    }
 }

@@ -114,7 +114,7 @@ public class ApiExceptionHandler {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ProblemDetail uploadTooLarge(MaxUploadSizeExceededException ex) {
         return problem(HttpStatus.PAYLOAD_TOO_LARGE, "Payload too large",
-                "Each DNI photo must be at most 1 MB", "photo-too-large");
+                "Each DNI photo must be at most 10 MB", "photo-too-large");
     }
 
     @ExceptionHandler({MissingServletRequestPartException.class, HttpMessageNotReadableException.class,

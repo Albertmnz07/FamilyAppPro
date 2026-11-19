@@ -15,7 +15,7 @@ public record PersonaResponse(
                 persona.getId(),
                 persona.getUsername(),
                 persona.getDni(),
-                "/api/v1/personas/me/photos/front",
-                "/api/v1/personas/me/photos/back");
+                persona.hasFrontPhoto() ? "/api/v1/personas/me/photos/front" : null,
+                persona.hasBackPhoto() ? "/api/v1/personas/me/photos/back" : null);
     }
 }

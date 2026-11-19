@@ -9,7 +9,6 @@ import albertmnz07.demo.family.MembershipRepository;
 import albertmnz07.demo.family.Persona;
 import albertmnz07.demo.family.PersonaRepository;
 import albertmnz07.demo.family.auth.AuthTokenRepository;
-import albertmnz07.demo.family.photo.PhotoStore;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -17,19 +16,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import java.time.Instant;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -40,8 +37,6 @@ class ApiIntegrationTest {
 
     private static final String AUTH = "Authorization";
     private static final String PASSWORD = "password123";
-    private static final byte[] FRONT = {1, 2, 3};
-    private static final byte[] BACK = {4, 5, 6};
 
     private static final String ADMIN_DNI = "12345678Z";
     private static final String MEMBER_DNI = "11111111H";
@@ -68,9 +63,6 @@ class ApiIntegrationTest {
     @Autowired
     AuthTokenRepository tokens;
 
-    @Autowired
-    PhotoStore photos;
-
     @AfterEach
     void cleanUp() {
         tokens.deleteAll();
@@ -82,29 +74,26 @@ class ApiIntegrationTest {
     }
 
     @Test
-    void registersAPersonaAndServesItsOwnProfile() throws Exception {
-        registerPersona(ADMIN_DNI);
+    void registersAPersonaWithoutPhotos() throws Exception {
+        UUID personaId = registerPersona(ADMIN_DNI);
+        Persona persona = personas.findById(personaId).orElseThrow();
+
+        assertThat(persona.getFrontPhotoKey()).isNull();
+        assertThat(persona.getBackPhotoKey()).isNull();
+        assertThat(persona.getFrontPhotoContentType()).isNull();
+        assertThat(persona.getBackPhotoContentType()).isNull();
 
         mvc.perform(get("/api/v1/personas/me").header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value(usernameFor(ADMIN_DNI)))
                 .andExpect(jsonPath("$.dni").value(ADMIN_DNI))
-                .andExpect(jsonPath("$.frontPhotoUrl").value("/api/v1/personas/me/photos/front"));
+                .andExpect(jsonPath("$.frontPhotoUrl").value(nullValue()))
+                .andExpect(jsonPath("$.backPhotoUrl").value(nullValue()));
 
         mvc.perform(get("/api/v1/personas/me/photos/front").header(AUTH, bearer(ADMIN_DNI)))
-                .andExpect(status().isOk())
-                .andExpect(header().string("Content-Type", "image/jpeg"))
-                .andExpect(header().string("Cache-Control", "no-store"))
-                .andExpect(content().bytes(FRONT));
-    }
-
-    @Test
-    void storesPhotosInTheObjectStore() throws Exception {
-        UUID personaId = registerPersona(ADMIN_DNI);
-        Persona persona = personas.findById(personaId).orElseThrow();
-
-        assertArrayEquals(FRONT, photos.get(persona.getFrontPhotoKey()).orElseThrow());
-        assertArrayEquals(BACK, photos.get(persona.getBackPhotoKey()).orElseThrow());
+                .andExpect(status().isNotFound());
+        mvc.perform(get("/api/v1/personas/me/photos/back").header(AUTH, bearer(ADMIN_DNI)))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -126,34 +115,27 @@ class ApiIntegrationTest {
     }
 
     @Test
-    void rejectsAnInvalidDni() throws Exception {
-        mvc.perform(registerRequest(usernameFor("12345678A"), "12345678A"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("validation-failed"));
+    void acceptsADniWithoutTheSpanishFormat() throws Exception {
+        mvc.perform(registerRequest("plain-dni-user", "DNI-SIN-FORMATO"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.dni").value("DNI-SIN-FORMATO"));
+    }
+
+    @Test
+    void normalizesTheDniToUppercase() throws Exception {
+        mvc.perform(registerRequest("mixed-case-user", "  abc-123  "))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.dni").value("ABC-123"));
     }
 
     @Test
     void rejectsAShortPassword() throws Exception {
         mvc.perform(multipart("/api/v1/personas")
-                .file(new MockMultipartFile("frontPhoto", "front.jpg", "image/jpeg", FRONT))
-                .file(new MockMultipartFile("backPhoto", "back.jpg", "image/jpeg", BACK))
                 .param("username", "someone")
                 .param("dni", ADMIN_DNI)
                 .param("password", "short"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("validation-failed"));
-    }
-
-    @Test
-    void rejectsAnUnsupportedPhotoType() throws Exception {
-        mvc.perform(multipart("/api/v1/personas")
-                .file(new MockMultipartFile("frontPhoto", "front.txt", "text/plain", FRONT))
-                .file(new MockMultipartFile("backPhoto", "back.jpg", "image/jpeg", BACK))
-                .param("username", "someone")
-                .param("dni", ADMIN_DNI)
-                .param("password", PASSWORD))
-                .andExpect(status().isUnsupportedMediaType())
-                .andExpect(jsonPath("$.code").value("unsupported-photo-type"));
     }
 
     @Test
@@ -278,13 +260,12 @@ class ApiIntegrationTest {
                 .header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.number").value(MEMBER_DNI))
-                .andExpect(jsonPath("$.frontPhotoUrl")
-                        .value("/api/v1/families/" + familyId + "/members/" + memberId + "/dni/front"));
+                .andExpect(jsonPath("$.frontPhotoUrl").value(nullValue()))
+                .andExpect(jsonPath("$.backPhotoUrl").value(nullValue()));
 
         mvc.perform(get("/api/v1/families/" + familyId + "/members/" + memberId + "/dni/front")
                 .header(AUTH, bearer(ADMIN_DNI)))
-                .andExpect(status().isOk())
-                .andExpect(content().bytes(FRONT));
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -519,8 +500,6 @@ class ApiIntegrationTest {
     private org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder registerRequest(
             String username, String dni) {
         return multipart("/api/v1/personas")
-                .file(new MockMultipartFile("frontPhoto", "front.jpg", "image/jpeg", FRONT))
-                .file(new MockMultipartFile("backPhoto", "back.jpg", "image/jpeg", BACK))
                 .param("username", username)
                 .param("dni", dni)
                 .param("password", PASSWORD);

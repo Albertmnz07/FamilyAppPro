@@ -16,7 +16,7 @@ import java.util.UUID;
 public class PersonaService {
 
     private static final Set<String> ALLOWED_PHOTO_TYPES = Set.of("image/jpeg", "image/png");
-    private static final int MAX_PHOTO_BYTES = 1_048_576;
+    private static final int MAX_PHOTO_BYTES = 10 * 1024 * 1024;
     private static final int MIN_PASSWORD_LENGTH = 8;
     private static final int MAX_PASSWORD_LENGTH = 100;
     private static final String USERNAME_PATTERN = "[a-z0-9._-]{3,30}";
@@ -31,8 +31,7 @@ public class PersonaService {
     }
 
     @Transactional
-    public Persona register(String rawUsername, String rawDni, String password, byte[] frontPhoto,
-            String frontPhotoContentType, byte[] backPhoto, String backPhotoContentType) {
+    public Persona register(String rawUsername, String rawDni, String password) {
         String username = normalizeUsername(rawUsername);
         String dni = normalizeDni(rawDni);
         validatePassword(password);
@@ -42,12 +41,7 @@ public class PersonaService {
         if (personas.existsByDni(dni)) {
             throw new DuplicateDniException("DNI already registered: " + dni);
         }
-        validatePhoto(frontPhoto, frontPhotoContentType, "front");
-        validatePhoto(backPhoto, backPhotoContentType, "back");
-        String frontPhotoKey = photos.put(frontPhoto);
-        String backPhotoKey = photos.put(backPhoto);
-        return personas.save(new Persona(username, dni, frontPhotoKey, frontPhotoContentType, backPhotoKey,
-                backPhotoContentType, passwordHasher.hash(password)));
+        return personas.save(new Persona(username, dni, passwordHasher.hash(password)));
     }
 
     public Persona find(UUID id) {
@@ -74,12 +68,12 @@ public class PersonaService {
         }
     }
 
-    private void validatePhoto(byte[] photo, String contentType, String side) {
+    public static void validatePhoto(byte[] photo, String contentType, String side) {
         if (photo == null || photo.length == 0) {
             throw new IllegalArgumentException("The " + side + " photo is required");
         }
         if (photo.length > MAX_PHOTO_BYTES) {
-            throw new IllegalArgumentException("The " + side + " photo exceeds 1 MB");
+            throw new IllegalArgumentException("The " + side + " photo exceeds 10 MB");
         }
         if (contentType == null || !ALLOWED_PHOTO_TYPES.contains(contentType.toLowerCase(Locale.ROOT))) {
             throw new UnsupportedPhotoTypeException(
