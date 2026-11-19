@@ -3,6 +3,7 @@
 import { InvalidInviteError, InvalidRedemptionError } from "./invites";
 import { InvalidDniError } from "./members";
 import { InvalidPageError } from "./page";
+import { InvalidPersonaError } from "./personas";
 import { isApiError, type ProblemDetail } from "./problem";
 
 export const errorMessages: Record<string, string> = {
@@ -44,6 +45,7 @@ export function messageForFailure(error: unknown, context?: "login"): string {
   if (
     error instanceof InvalidPageError ||
     error instanceof InvalidDniError ||
+    error instanceof InvalidPersonaError ||
     error instanceof InvalidRedemptionError ||
     error instanceof InvalidInviteError
   ) {

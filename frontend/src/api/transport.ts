@@ -31,7 +31,7 @@ export function resolveApiUrl(path: string): string {
 }
 
 export type RequestInit = {
-  method: "GET" | "POST" | "DELETE";
+  method: "GET" | "POST" | "PUT" | "DELETE";
   path: string;
   query?: QueryParams;
   /** JSON body; omitted for GET/DELETE. */
