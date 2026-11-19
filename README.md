@@ -61,14 +61,15 @@ Vite serves the app on <http://localhost:5173>, which is one of the CORS origins
 
 The whole circuit needs two personas: the one who creates the family, and the one who joins it. Use a second browser profile or a private window for the second persona, so the two sessions don't share a token.
 
-1. **Register** at `/register`. Each persona needs a username (3–30 characters: letters, digits, dots, underscores or hyphens), a Spanish DNI (eight digits plus its check letter, for example `40000001B`), a password of 8–100 characters, and a photo of each side of the DNI (up to 1 MB each). The two photos are what the family will see later.
+1. **Register** at `/register`. Each persona needs a username (3–30 characters: letters, digits, dots, underscores or hyphens), a DNI number (any non-blank value; it is unique and never edited) and a password of 8–100 characters. No photos at sign-up.
 2. **Log in** at `/login`. The session lasts seven days; when the token expires the app returns to the login screen with a notice.
-3. **Create a family** on `/families`. Whoever creates it becomes its Admin, marked with a badge in the workspace.
-4. **Issue an invite** from the family workspace: `Emitir invitación` shows a single-use code and its expiry (seven days), with a button to copy it.
-5. **Redeem the invite** as the second persona: paste the code into `Canjear una invitación` on `/families`, or open the shared link `/invites/<code>` directly. Joining accepts that persona's consent, so their DNI becomes visible to the family.
-6. **View a DNI** with `Ver DNI` on a member row: the number and both photos, while that persona's consent is in force.
-7. **Revoke your own consent** with `Revocar consentimiento` on your own row, after confirming. The row then reads `Sin consentimiento` and the DNI stops being shown to anyone in that family. You stay a member — revoking consent is not leaving the family.
-8. **Remove a member** (Admin only) with `Retirar` on any row except your own, after confirming. The row disappears and that persona loses access to the family. The family's Admin cannot be removed: the API refuses with `cannot-remove-admin`, and the app shows the refusal in Spanish.
+3. **Add your DNI photos** (optional) from the personal menu at `/mi-perfil`, linked from the top bar. It shows your username and DNI read-only, and `Subir fotos del DNI` takes a front and/or back photo from the file picker or the phone camera (JPEG/PNG, up to 10 MB each). You can add or replace a side at any time.
+4. **Create a family** on `/families`. Whoever creates it becomes its Admin, marked with a badge in the workspace.
+5. **Issue an invite** from the family workspace: `Emitir invitación` shows a single-use code and its expiry (seven days), with a button to copy it.
+6. **Redeem the invite** as the second persona: paste the code into `Canjear una invitación` on `/families`, or open the shared link `/invites/<code>` directly. Joining accepts that persona's consent, so their DNI becomes visible to the family.
+7. **View a DNI** with `Ver DNI` on a member row: the number and any uploaded photos, while that persona's consent is in force. Tap a photo to enlarge it (close with the cross, a tap outside or Escape); a member who has uploaded none shows `Sin fotos del DNI`.
+8. **Revoke your own consent** with `Revocar consentimiento` on your own row, after confirming. The row then reads `Sin consentimiento` and the DNI stops being shown to anyone in that family. You stay a member — revoking consent is not leaving the family.
+9. **Remove a member** (Admin only) with `Retirar` on any row except your own, after confirming. The row disappears and that persona loses access to the family. The family's Admin cannot be removed: the API refuses with `cannot-remove-admin`, and the app shows the refusal in Spanish.
 
 ## Configuration
 
@@ -85,7 +86,7 @@ Everything has a working default for local use; override with environment variab
 
 The server listens on port 8080. If you change it with `SERVER_PORT`, rebuild the front-end with a matching `VITE_API_BASE_URL`, because the built app carries the API URL rather than discovering it.
 
-DNI photos live outside PostgreSQL, in the local photo store rooted at `PHOTOS_DIR`; the database keeps only the photo keys.
+DNI photos live outside PostgreSQL, in the local photo store rooted at `PHOTOS_DIR`; the database keeps only the photo keys. Uploads are capped at 10 MB per photo and 30 MB per request.
 
 ## API
 
@@ -115,9 +116,10 @@ A missing, malformed or unknown token returns `401`. Tokens expire after seven d
 
 | Method | Path | Who |
 | --- | --- | --- |
-| `POST` | `/api/v1/personas` (multipart: `username`, `dni`, `password`, `frontPhoto`, `backPhoto`) | anyone |
+| `POST` | `/api/v1/personas` (multipart: `username`, `dni`, `password`) | anyone |
 | `POST` | `/api/v1/auth/login` (`username`, `password`) | anyone |
 | `GET` | `/api/v1/personas/me` | authenticated persona |
+| `PUT` | `/api/v1/personas/me/dni/photos` (multipart: `frontPhoto`, `backPhoto`, both optional) | authenticated persona |
 | `GET` | `/api/v1/personas/me/photos/{front,back}` | authenticated persona |
 | `POST` | `/api/v1/families` | authenticated persona |
 | `GET` | `/api/v1/me/families` | authenticated persona |
@@ -130,7 +132,7 @@ A missing, malformed or unknown token returns `401`. Tokens expire after seven d
 | `GET` | `/api/v1/families/{id}/members/{personaId}/dni` | accepted member, consent in force |
 | `GET` | `/api/v1/families/{id}/members/{personaId}/dni/{front,back}` | accepted member, consent in force |
 
-Members are listed alphabetically by DNI. Each member exposes its `username` (always) and its `dni` (`null` while that persona's consent is not in force). Errors use `application/problem+json` (RFC 9457) with a `code` property, which is what the front-end maps to Spanish messages.
+Members are listed alphabetically by DNI. Each member exposes its `username` (always) and its `dni` (`null` while that persona's consent is not in force). `PersonaResponse` and `DniResponse` expose `frontPhotoUrl`/`backPhotoUrl` as `null` until that side is uploaded. Errors use `application/problem+json` (RFC 9457) with a `code` property, which is what the front-end maps to Spanish messages.
 
 `GET /api/v1/me/families` and `GET /api/v1/families/{id}/members` are paginated with Spring's `page`/`size` query parameters (default `page=0`, `size=20`, maximum `size=100`) and return Spring's paged JSON shape (`content`, `totalElements`, `totalPages`, `number`, `size`, …). A `size` above the maximum is clamped to `100` rather than rejected. Ordering is fixed server-side (families by name, members by DNI): the client `sort` parameter is ignored and the paged metadata reports the page as unsorted.
 
