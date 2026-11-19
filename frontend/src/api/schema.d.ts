@@ -285,8 +285,8 @@ export interface components {
             id?: string;
             username?: string;
             dni?: string;
-            frontPhotoUrl?: string;
-            backPhotoUrl?: string;
+            frontPhotoUrl?: string | null;
+            backPhotoUrl?: string | null;
         };
         Persona: {
             /** Format: uuid */
@@ -405,8 +405,8 @@ export interface components {
             /** Format: uuid */
             personaId?: string;
             number?: string;
-            frontPhotoUrl?: string;
-            backPhotoUrl?: string;
+            frontPhotoUrl?: string | null;
+            backPhotoUrl?: string | null;
         };
     };
     responses: never;
