@@ -11,6 +11,45 @@
     }
   ],
   "paths": {
+    "/api/v1/personas/me/dni/photos": {
+      "put": {
+        "tags": [
+          "Personas"
+        ],
+        "operationId": "updateDniPhotos",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "frontPhoto": {
+                    "type": "string",
+                    "format": "binary"
+                  },
+                  "backPhoto": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonaResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/personas": {
       "post": {
         "tags": [
@@ -48,29 +87,6 @@
             }
           }
         ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "frontPhoto": {
-                    "type": "string",
-                    "format": "binary"
-                  },
-                  "backPhoto": {
-                    "type": "string",
-                    "format": "binary"
-                  }
-                },
-                "required": [
-                  "backPhoto",
-                  "frontPhoto"
-                ]
-              }
-            }
-          }
-        },
         "responses": {
           "201": {
             "description": "Created",

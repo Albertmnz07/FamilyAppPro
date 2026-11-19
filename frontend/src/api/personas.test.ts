@@ -7,20 +7,16 @@ afterEach(() => {
 });
 
 describe("register", () => {
-  it("posts the credentials and both photos as multipart form data", async () => {
+  it("posts the credentials as multipart form data without any photo part", async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       jsonResponse({ id: "p1", username: "ana", dni: "12345678Z" }, 201),
     );
     vi.stubGlobal("fetch", fetchMock);
-    const frontPhoto = new File(["front"], "front.jpg", { type: "image/jpeg" });
-    const backPhoto = new File(["back"], "back.jpg", { type: "image/jpeg" });
 
     const persona = await register({
       username: "ana",
       dni: "12345678Z",
       password: "secret-1",
-      frontPhoto,
-      backPhoto,
     });
 
     expect(persona).toEqual({ id: "p1", username: "ana", dni: "12345678Z" });
@@ -33,7 +29,7 @@ describe("register", () => {
     expect(form.get("username")).toBe("ana");
     expect(form.get("dni")).toBe("12345678Z");
     expect(form.get("password")).toBe("secret-1");
-    expect(form.get("frontPhoto")).toBe(frontPhoto);
-    expect(form.get("backPhoto")).toBe(backPhoto);
+    expect(form.get("frontPhoto")).toBeNull();
+    expect(form.get("backPhoto")).toBeNull();
   });
 });

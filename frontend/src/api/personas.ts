@@ -1,6 +1,6 @@
 // Endpoint functions for the Personas resource. Registration is the only public
-// Persona write: a multipart form carrying the credentials as fields and the two
-// DNI photos as parts (spec #14, "Photos"), so it bypasses the JSON body path.
+// Persona write: a multipart form carrying the credentials as fields. DNI photos
+// are optional and uploaded later (spec #26).
 import type { components } from "./schema";
 import { request } from "./transport";
 
@@ -10,8 +10,6 @@ export type Registration = {
   username: string;
   dni: string;
   password: string;
-  frontPhoto: File;
-  backPhoto: File;
 };
 
 /** The identity the registration call creates, with the fields the contract always sends. */
@@ -26,8 +24,6 @@ export async function register(input: Registration, signal?: AbortSignal): Promi
   form.set("username", input.username);
   form.set("dni", input.dni);
   form.set("password", input.password);
-  form.set("frontPhoto", input.frontPhoto);
-  form.set("backPhoto", input.backPhoto);
 
   const data = await request<PersonaResponse>({
     method: "POST",
