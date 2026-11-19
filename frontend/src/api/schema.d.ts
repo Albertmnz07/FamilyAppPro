@@ -4,6 +4,22 @@
  */
 
 export interface paths {
+    "/api/v1/personas/me/dni/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateDniPhotos"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/personas": {
         parameters: {
             query?: never;
@@ -401,6 +417,35 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    updateDniPhotos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    frontPhoto?: string;
+                    /** Format: binary */
+                    backPhoto?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["PersonaResponse"];
+                };
+            };
+        };
+    };
     register: {
         parameters: {
             query: {
@@ -412,16 +457,7 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: {
-            content: {
-                "multipart/form-data": {
-                    /** Format: binary */
-                    frontPhoto: string;
-                    /** Format: binary */
-                    backPhoto: string;
-                };
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Created */
             201: {

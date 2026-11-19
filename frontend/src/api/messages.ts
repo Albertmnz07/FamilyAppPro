@@ -15,7 +15,7 @@ export const errorMessages: Record<string, string> = {
   "invite-already-redeemed": "La invitación ya se ha utilizado.",
   "cannot-remove-admin": "El administrador de la familia no puede ser retirado.",
   "unsupported-photo-type": "Las fotos deben ser JPEG o PNG.",
-  "photo-too-large": "Cada foto puede pesar 1 MB como máximo.",
+  "photo-too-large": "Cada foto puede pesar 10 MB como máximo.",
   "validation-failed": "Revisa los campos marcados.",
   "bad-request": "La petición no es válida.",
 };
