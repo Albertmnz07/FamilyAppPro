@@ -8,6 +8,7 @@ import { RegisterPage } from "./pages/RegisterPage";
 import { FamiliesPage } from "./pages/FamiliesPage";
 import { FamilyWorkspacePage } from "./pages/FamilyWorkspacePage";
 import { InviteRedemptionPage } from "./pages/InviteRedemptionPage";
+import { ProfilePage } from "./pages/ProfilePage";
 import { RequireToken } from "./routing/RequireToken";
 import { AppShell } from "./shell/AppShell";
 
@@ -48,6 +49,14 @@ function AppRoutes() {
           element={
             <RequireToken>
               <InviteRedemptionPage />
+            </RequireToken>
+          }
+        />
+        <Route
+          path="/mi-perfil"
+          element={
+            <RequireToken>
+              <ProfilePage />
             </RequireToken>
           }
         />

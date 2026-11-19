@@ -32,4 +32,19 @@ describe("App", () => {
 
     expect(screen.getByRole("heading", { name: "Iniciar sesión" })).toBeInTheDocument();
   });
+
+  it("redirects unidentified visitors from the personal menu to the login screen", () => {
+    window.history.replaceState(null, "", "/mi-perfil");
+    render(<App />);
+
+    expect(screen.getByRole("heading", { name: "Iniciar sesión" })).toBeInTheDocument();
+  });
+
+  it("links the personal menu from the shell for an identified visitor", () => {
+    setToken("token-1");
+    window.history.replaceState(null, "", "/families");
+    render(<App />);
+
+    expect(screen.getByRole("link", { name: "Mi perfil" })).toHaveAttribute("href", "/mi-perfil");
+  });
 });

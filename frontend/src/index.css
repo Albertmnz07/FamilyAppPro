@@ -254,7 +254,8 @@ button:focus-visible {
 .empty-state > button[type="button"],
 .pagination button,
 .form-error button,
-.invite-issuance button {
+.invite-issuance button,
+.dni-upload button {
   font: inherit;
   min-height: 48px;
   padding: 0.5rem 0.75rem;
@@ -281,7 +282,8 @@ button:focus-visible {
 }
 
 .pagination button:disabled,
-.invite-issuance button:disabled {
+.invite-issuance button:disabled,
+.dni-upload button:disabled {
   opacity: 0.5;
   cursor: default;
 }
@@ -568,6 +570,86 @@ dialog::backdrop {
   border-color: var(--color-danger);
   background: var(--color-danger);
   color: #ffffff;
+}
+
+/* Personal menu: read-only identity, optional DNI-photo upload and the camera. */
+.profile-link {
+  margin-inline-start: auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding-inline: 0.5rem;
+  color: var(--color-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.profile-data {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem 1rem;
+  margin: 0 0 1.5rem;
+  padding: 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.profile-data dt {
+  color: var(--color-ink-soft);
+  font-weight: 600;
+}
+
+.profile-data dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.dni-upload {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+}
+
+.dni-upload h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.dni-upload button.primary {
+  background: var(--color-primary);
+  color: var(--color-primary-ink);
+}
+
+.file-name {
+  margin: 0;
+  color: var(--color-ink-soft);
+  font-size: 0.9rem;
+}
+
+.camera-capture {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.camera-capture video,
+.camera-preview {
+  inline-size: 100%;
+  max-width: 24rem;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+}
+
+.camera-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 /* Hides content visually but keeps it in the accessibility tree. */

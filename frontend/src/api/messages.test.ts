@@ -2,6 +2,7 @@ import { fromPartial } from "@total-typescript/shoehorn";
 import { describe, expect, it } from "vitest";
 import { InvalidRedemptionError } from "./invites";
 import { InvalidPageError } from "./page";
+import { InvalidPersonaError } from "./personas";
 import { ApiError, type ProblemDetail } from "./problem";
 import {
   errorMessages,
@@ -80,6 +81,7 @@ describe("messageForFailure", () => {
 
   it("does not blame the network for a malformed successful response", () => {
     expect(messageForFailure(new InvalidPageError("no content array"))).toBe(unexpectedResponseMessage);
+    expect(messageForFailure(new InvalidPersonaError("bad profile"))).toBe(unexpectedResponseMessage);
     expect(messageForFailure(new InvalidRedemptionError("bad redemption"))).toBe(
       unexpectedResponseMessage,
     );
