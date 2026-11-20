@@ -233,7 +233,7 @@ class ApiIntegrationTest {
         mvc.perform(multipart("/api/v1/personas")
                 .param("username", "someone")
                 .param("dni", ADMIN_DNI)
-                .param("password", "short"))
+                .param("password", "ab"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("validation-failed"));
     }

@@ -19,7 +19,7 @@ public class PersonaService {
 
     private static final Set<String> ALLOWED_PHOTO_TYPES = Set.of("image/jpeg", "image/png");
     private static final int MAX_PHOTO_BYTES = 10 * 1024 * 1024;
-    private static final int MIN_PASSWORD_LENGTH = 8;
+    private static final int MIN_PASSWORD_LENGTH = 3;
     private static final int MAX_PASSWORD_LENGTH = 100;
     private static final String USERNAME_PATTERN = "[a-z0-9._-]{3,30}";
 
@@ -88,7 +88,7 @@ public class PersonaService {
 
     private void validatePassword(String password) {
         if (password == null || password.length() < MIN_PASSWORD_LENGTH || password.length() > MAX_PASSWORD_LENGTH) {
-            throw new IllegalArgumentException("The password must be 8-100 characters");
+            throw new IllegalArgumentException("The password must be 3-100 characters");
         }
     }
 

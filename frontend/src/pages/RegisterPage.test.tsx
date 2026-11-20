@@ -209,6 +209,22 @@ describe("RegisterPage", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
   });
 
+  it("accepts a password of three characters", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(personaResponseBody, 201));
+    vi.stubGlobal("fetch", fetchMock);
+    const user = userEvent.setup();
+    renderRegister();
+
+    await user.type(screen.getByLabelText("Nombre de usuario"), "ana");
+    await user.type(screen.getByLabelText("DNI"), "12345678Z");
+    await user.type(screen.getByLabelText("Contraseña"), "abc");
+    await user.tab();
+    expect(screen.getByLabelText("Contraseña")).toHaveAttribute("aria-invalid", "false");
+
+    submitRegisterForm();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+  });
+
   it("shows a general message for a request-level validation failure", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(requestLevelFailureBody, 400)));
     const user = userEvent.setup();

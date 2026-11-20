@@ -22,7 +22,7 @@ const fieldMessages: Record<FieldName, string> = {
   username:
     "El nombre de usuario debe tener 3-30 caracteres: letras, dígitos, puntos, guiones bajos o guiones.",
   dni: "Escribe tu número de DNI.",
-  password: "La contraseña debe tener 8-100 caracteres.",
+  password: "La contraseña debe tener 3-100 caracteres.",
 };
 
 /** The one field each duplicate-`code` points at. */
@@ -190,7 +190,7 @@ export function RegisterPage() {
             autoComplete="new-password"
             enterKeyHint="done"
             required
-            minLength={8}
+            minLength={3}
             maxLength={100}
             ref={(element) => {
               refs.current.password = element;

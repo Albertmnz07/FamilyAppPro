@@ -46,9 +46,9 @@ public class PersonaController {
                     message = "must be 3-30 characters: letters, digits, dots, underscores or hyphens") String username,
             @RequestParam @NotBlank String dni,
             @RequestParam @NotBlank @Size(
-                    min = 8,
+                    min = 3,
                     max = 100,
-                    message = "must be 8-100 characters") String password) {
+                    message = "must be 3-100 characters") String password) {
         return PersonaResponse.of(personas.register(username, dni, password));
     }
 
