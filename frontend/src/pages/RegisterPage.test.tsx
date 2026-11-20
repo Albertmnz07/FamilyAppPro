@@ -110,8 +110,10 @@ describe("RegisterPage", () => {
     await fillValidForm(user);
     submitRegisterForm();
 
-    await waitFor(() => expect(currentPath()).toBe("/login"));
-    expect(screen.getByText(registrationSuccessNotice)).toBeInTheDocument();
+    // findByText instead of getByText: the notice renders when LoginPage mounts
+    // after the navigation, which can land a tick later than the path probe.
+    await screen.findByText(registrationSuccessNotice);
+    expect(currentPath()).toBe("/login");
 
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe("http://localhost:8080/api/v1/personas");
