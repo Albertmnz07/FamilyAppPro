@@ -15,3 +15,19 @@ FamilyApp.kdev4
 .env
 .env.*
 .DS_Store
+
+# Documentation and tooling not needed to build the jar. Excluding them keeps
+# the build context small and avoids invalidating the source layer when only
+# docs or local tooling change.
+docs/
+db/
+Makefile
+README.md
+AGENTS.md
+CODING_STANDARDS.md
+GLOSSARY.md
+.agents/
+.githooks/
+skills-lock.json
+compose.dev.yml
+compose.prod.yml
