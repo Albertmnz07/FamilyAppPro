@@ -12,6 +12,34 @@ The user interface is in Spanish.
 | PostgreSQL | any recent version, listening on `localhost:5432` | the database |
 | Node.js + npm | 22.12 or newer | building the front-end, its tests, front-end development |
 
+For the containerized path below, Docker (Engine plus the Compose plugin) and git are enough — no local Java, PostgreSQL or Node.
+
+## Deploy with Docker
+
+Clone the repository and run one compose file from its root. `.env` is optional: [`.env.example`](.env.example) lists every compose variable and its default, and those defaults start both stacks as-is without committing a secret (`.env` is git-ignored).
+
+### Development
+
+```bash
+git clone https://github.com/Albertmnz07/FamilyAppPro.git
+cd FamilyAppPro
+docker compose -f compose.dev.yml up --build
+```
+
+Open <http://localhost:5173> for the app; the API listens on <http://localhost:8070>. The stack is PostgreSQL, the API (source bind-mounted, running `spring-boot:run`) and the Vite dev server. The browser runs on `http://localhost:5173`, one of the CORS origins allowed by default, and calls the API on `localhost:8070`. Front-end edits hot-reload in Vite; after editing Java sources, run `docker compose -f compose.dev.yml restart api` to recompile. Neither needs an image rebuild, and later runs can drop `--build` (`docker compose -f compose.dev.yml up`).
+
+### Production on a second PC (fake production)
+
+```bash
+git clone https://github.com/Albertmnz07/FamilyAppPro.git
+cd FamilyAppPro
+docker compose -f compose.prod.yml up -d --build
+```
+
+Open <http://localhost:8070> on that PC, or `http://<LAN-IP>:8070` from another device on the same LAN (find the address with `hostname -I` on Linux or `ipconfig` on Windows). Only PostgreSQL and one back-end image run: the jar serves the API and the built front-end from the same origin, as [ADR-0006](docs/adr/0006-frontend-location-and-api-base-url.md) requires. The production build bakes the **relative** `/api/v1` into the front-end, so the same image works for any hostname or LAN address without rebuilding; development uses the absolute URL because the browser runs on the host. This is a trusted-LAN deployment exercise: no TLS, registry or non-default credentials.
+
+Both stacks publish port 8070, so stop one (`docker compose -f <file> down`) before starting the other. `down` keeps PostgreSQL data in the `pgdata` volume and DNI photos in `./data/photos`; `down -v` deletes the database volume. For a host-run setup without Docker, follow [Deploy it on localhost](#deploy-it-on-localhost) below. The topology and why the two compose files differ are recorded in [ADR-0008](docs/adr/0008-containerized-deployment.md).
+
 ## Deploy it on localhost
 
 ### 1. Bootstrap the database (one time)
