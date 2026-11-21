@@ -19,6 +19,12 @@ RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && node --version \
     && npm --version
 
+# The production build bakes the API base URL into the SPA. The default keeps
+# the standalone image usable on localhost; compose.prod.yml overrides it with
+# --build-arg VITE_API_BASE_URL=/api/v1 for same-origin LAN deployments.
+ARG VITE_API_BASE_URL=http://localhost:8070/api/v1
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
 COPY . .
 RUN ./mvnw package -DskipTests
 
@@ -32,8 +38,8 @@ ENTRYPOINT ["java", "-jar", "/app/app.jar"]
 
 # Development: `spring-boot:run` over a bind-mounted source tree. compose.dev.yml
 # mounts the repository at /workspace and keeps the image's Maven cache. The
-# base image already provides Maven, so the dev target skips the wrapper.
+# wrapper keeps dev on the same Maven 3.9.9 as the builder.
 FROM maven:3.9-eclipse-temurin-21 AS dev
 WORKDIR /workspace
 EXPOSE 8070
-CMD ["mvn", "spring-boot:run"]
+CMD ["./mvnw", "spring-boot:run"]
