@@ -25,8 +25,26 @@ RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
 ARG VITE_API_BASE_URL=http://localhost:8070/api/v1
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
+# --- Dependency layers -------------------------------------------------------
+# Copy only the files that describe the dependencies before the source. Docker
+# caches these layers as long as the POM and the lockfile do not change, so a
+# Java-only or TypeScript-only change reuses the downloaded Maven and npm
+# artifacts instead of fetching them again. This is what makes a code-only
+# redeploy fast.
+COPY .mvn/ .mvn/
+COPY mvnw mvnw.cmd pom.xml ./
+RUN ./mvnw -B -q dependency:go-offline
+
+COPY frontend/package.json frontend/package-lock.json frontend/
+RUN npm ci --prefix frontend
+
+# --- Source layer ------------------------------------------------------------
+# Everything else. A source change invalidates this layer and the package step
+# below, but the dependency layers above stay cached. The package phase still
+# runs `npm ci` (see pom.xml); it now resolves from the warmed npm cache and
+# reinstalls only when the lockfile changes.
 COPY . .
-RUN ./mvnw package -DskipTests
+RUN ./mvnw -B package -DskipTests
 
 # Runtime: only the jar and a JRE. The front-end is already inside the jar's
 # static resources, so no Node or Maven reaches production.

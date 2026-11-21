@@ -30,6 +30,28 @@ docker compose -f compose.dev.yml up --build
 - En arranques posteriores puedes omitir `--build`: `docker compose -f compose.dev.yml up`.
 - Para parar: `docker compose -f compose.dev.yml down`.
 
+## Atajos con make
+
+La raíz incluye un [`Makefile`](../Makefile) que reúne estos comandos. Ejecuta `make` (o `make help`) para ver la lista completa.
+
+| Comando | Efecto |
+| --- | --- |
+| `make dev` | arranca el stack de desarrollo y sigue los logs |
+| `make dev-detached` | arranca el stack de desarrollo en segundo plano |
+| `make dev-down` | para el stack de desarrollo (conserva los datos) |
+| `make dev-restart` | reinicia la API para recompilar los cambios en Java |
+| `make prod` | reconstruye y redespliega los servicios de producción modificados (`up -d --build`) |
+| `make prod-start` | arranca el stack de producción sin reconstruir imágenes (`up -d --no-build`) |
+| `make prod-rebuild` | fuerza una reconstrucción completa de la imagen de la API (`build --no-cache api` + `up -d`) |
+| `make prod-down` | para el stack de producción (conserva los datos) |
+| `make db-reset-dev` | recrea la base de datos de desarrollo desde cero |
+| `make db-reset-prod` | recrea la base de datos de producción desde cero |
+| `make test` | suites de backend y front-end |
+| `make build` | construye el artefacto único con el front-end dentro |
+| `make run` | construye el artefacto y lo ejecuta en <http://localhost:8070> |
+
+Los `up` de producción recrean solo los servicios cuya imagen o configuración cambió, así no se acumulan contenedores viejos. Los resets hacen `down -v`, que **borra el volumen `pgdata`** pero deja `./data/photos` intacto.
+
 ## Segundo PC ("fake production")
 
 ```bash
