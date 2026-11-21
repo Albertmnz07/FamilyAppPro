@@ -12,33 +12,48 @@ The user interface is in Spanish.
 | PostgreSQL | any recent version, listening on `localhost:5432` | the database |
 | Node.js + npm | 22.12 or newer | building the front-end, its tests, front-end development |
 
-For the containerized path below, Docker (Engine plus the Compose plugin) and git are enough — no local Java, PostgreSQL or Node.
+For the containerized path below, Docker (Engine plus the Compose plugin), `make` and git are enough — no local Java, PostgreSQL or Node.
 
 ## Deploy with Docker
 
-Clone the repository and run one compose file from its root. `.env` is optional: [`.env.example`](.env.example) lists every compose variable and its default, and those defaults start both stacks as-is without committing a secret (`.env` is git-ignored).
+Clone the repository and run one compose file from its root. `.env` is optional: [`.env.example`](.env.example) lists every compose variable and its default, and those defaults start both stacks as-is without committing a secret (`.env` is git-ignored). For a step-by-step guide to running the stacks and using the app, see [docs/usage.md](docs/usage.md).
+
+The everyday commands are wrapped in a [`Makefile`](Makefile): run `make` (or `make help`) to list every target. Each block below shows the `make` target first, then the compose, Maven or npm command it runs underneath.
 
 ### Development
 
 ```bash
 git clone https://github.com/Albertmnz07/FamilyAppPro.git
 cd FamilyAppPro
+make dev
+```
+
+`make dev` runs:
+
+```bash
 docker compose -f compose.dev.yml up --build
 ```
 
-Open <http://localhost:5173> for the app; the API listens on <http://localhost:8070>. The stack is PostgreSQL, the API (source bind-mounted, running `spring-boot:run`) and the Vite dev server. The browser runs on `http://localhost:5173`, one of the CORS origins allowed by default, and calls the API on `localhost:8070`. Front-end edits hot-reload in Vite; after editing Java sources, run `docker compose -f compose.dev.yml restart api` to recompile. Neither needs an image rebuild, and later runs can drop `--build` (`docker compose -f compose.dev.yml up`).
+Open <http://localhost:5173> for the app; the API listens on <http://localhost:8070>. The stack is PostgreSQL, the API (source bind-mounted, running `spring-boot:run`) and the Vite dev server. The browser runs on `http://localhost:5173`, one of the CORS origins allowed by default, and calls the API on `localhost:8070`. Front-end edits hot-reload in Vite; after editing Java sources, run `make dev-restart` (`docker compose -f compose.dev.yml restart api`) to recompile. Neither needs an image rebuild, and later runs can start in the background with `make dev-detached` (`docker compose -f compose.dev.yml up -d --build`).
 
 ### Production on a second PC (fake production)
 
 ```bash
 git clone https://github.com/Albertmnz07/FamilyAppPro.git
 cd FamilyAppPro
+make prod
+```
+
+`make prod` stops any stack still running from an earlier deploy, then rebuilds and restarts it detached:
+
+```bash
+docker compose -f compose.prod.yml down
 docker compose -f compose.prod.yml up -d --build
 ```
 
 Open <http://localhost:8070> on that PC, or `http://<LAN-IP>:8070` from another device on the same LAN (find the address with `hostname -I` on Linux or `ipconfig` on Windows). Only PostgreSQL and one back-end image run: the jar serves the API and the built front-end from the same origin, as [ADR-0006](docs/adr/0006-frontend-location-and-api-base-url.md) requires. The production build bakes the **relative** `/api/v1` into the front-end, so the same image works for any hostname or LAN address without rebuilding; development uses the absolute URL because the browser runs on the host. This is a trusted-LAN deployment exercise: no TLS, registry or non-default credentials.
 
-Both stacks publish port 8070, so stop one (`docker compose -f <file> down`) before starting the other. `down` keeps PostgreSQL data in the `pgdata` volume and DNI photos in `./data/photos`; `down -v` deletes the database volume. For a host-run setup without Docker, follow [Deploy it on localhost](#deploy-it-on-localhost) below. The topology and why the two compose files differ are recorded in [ADR-0008](docs/adr/0008-containerized-deployment.md).
+Both stacks publish port 8070, so stop one before starting the other: `make dev-down` or `make prod-down`, each running `docker compose -f <file> down`. `down` keeps PostgreSQL data in the `pgdata` volume and DNI photos in `./data/photos`. The reset targets — `make db-reset-dev` and `make db-reset-prod` — run `down -v` and bring the stack back up, deleting the database volume while keeping the photos. For a host-run setup without Docker, follow [Deploy it on localhost](#deploy-it-on-localhost) below. The topology and why the two compose files differ are recorded in [ADR-0008](docs/adr/0008-containerized-deployment.md).
 
 ## Deploy it on localhost
 
@@ -59,6 +74,12 @@ rm -rf data/photos
 ```
 
 ### 2. Build and run the single artifact
+
+```bash
+make run
+```
+
+`make run` builds the artifact (`make build`, i.e. `./mvnw package`) and starts the jar:
 
 ```bash
 ./mvnw package
@@ -89,7 +110,7 @@ Vite serves the app on <http://localhost:5173>, which is one of the CORS origins
 
 The whole circuit needs two personas: the one who creates the family, and the one who joins it. Use a second browser profile or a private window for the second persona, so the two sessions don't share a token.
 
-1. **Register** at `/register`. Each persona needs a username (3–30 characters: letters, digits, dots, underscores or hyphens), a DNI number (any non-blank value; it is unique and never edited) and a password of 8–100 characters. No photos at sign-up.
+1. **Register** at `/register`. Each persona needs a username (3–30 characters: letters, digits, dots, underscores or hyphens), a DNI number (any non-blank value; it is unique and never edited) and a password of 3–100 characters. No photos at sign-up.
 2. **Log in** at `/login`. The session lasts seven days; when the token expires the app returns to the login screen with a notice.
 3. **Add your DNI photos** (optional) from the personal menu at `/mi-perfil`, linked from the top bar. It shows your username and DNI read-only, and `Subir fotos del DNI` takes a front and/or back photo from the file picker or the phone camera (JPEG/PNG, up to 10 MB each). You can add or replace a side at any time.
 4. **Create a family** on `/families`. Whoever creates it becomes its Admin, marked with a badge in the workspace.
@@ -178,7 +199,7 @@ The production build is integrated into the single Spring artifact: `npm run bui
 
 ### Checks
 
-`npm run check` runs typecheck, lint and the test suite in one go; lint treats warnings as failures. The repository ships its git hooks in `.githooks/` — a pre-commit running the front-end checks and a pre-push running `./mvnw -q test`. Enable them once per clone:
+`npm run check` runs typecheck, lint and the test suite in one go; lint treats warnings as failures. From the repository root, `make check` is the same command: `npm --prefix frontend run check`. The repository ships its git hooks in `.githooks/` — a pre-commit running the front-end checks and a pre-push running `./mvnw -q test`. Enable them once per clone:
 
 ```bash
 git config core.hooksPath .githooks
@@ -187,8 +208,14 @@ git config core.hooksPath .githooks
 ## Tests
 
 ```bash
+make test
+```
+
+`make test` runs both suites:
+
+```bash
 ./mvnw test                      # backend, on H2 in PostgreSQL mode
-cd frontend && npm run check     # typecheck, lint and front-end tests
+npm --prefix frontend run check  # typecheck, lint and front-end tests
 ```
 
 The backend tests run the same Flyway migrations against H2, so a migration that drifts from the entities fails the suite.
