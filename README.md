@@ -16,7 +16,7 @@ For the containerized path below, Docker (Engine plus the Compose plugin) and gi
 
 ## Deploy with Docker
 
-Clone the repository and run one compose file from its root. `.env` is optional: [`.env.example`](.env.example) lists every compose variable and its default, and those defaults start both stacks as-is without committing a secret (`.env` is git-ignored).
+Clone the repository and run one compose file from its root. `.env` is optional: [`.env.example`](.env.example) lists every compose variable and its default, and those defaults start both stacks as-is without committing a secret (`.env` is git-ignored). For a step-by-step guide to running the stacks and using the app, see [docs/usage.md](docs/usage.md).
 
 ### Development
 
@@ -89,7 +89,7 @@ Vite serves the app on <http://localhost:5173>, which is one of the CORS origins
 
 The whole circuit needs two personas: the one who creates the family, and the one who joins it. Use a second browser profile or a private window for the second persona, so the two sessions don't share a token.
 
-1. **Register** at `/register`. Each persona needs a username (3–30 characters: letters, digits, dots, underscores or hyphens), a DNI number (any non-blank value; it is unique and never edited) and a password of 8–100 characters. No photos at sign-up.
+1. **Register** at `/register`. Each persona needs a username (3–30 characters: letters, digits, dots, underscores or hyphens), a DNI number (any non-blank value; it is unique and never edited) and a password of 3–100 characters. No photos at sign-up.
 2. **Log in** at `/login`. The session lasts seven days; when the token expires the app returns to the login screen with a notice.
 3. **Add your DNI photos** (optional) from the personal menu at `/mi-perfil`, linked from the top bar. It shows your username and DNI read-only, and `Subir fotos del DNI` takes a front and/or back photo from the file picker or the phone camera (JPEG/PNG, up to 10 MB each). You can add or replace a side at any time.
 4. **Create a family** on `/families`. Whoever creates it becomes its Admin, marked with a badge in the workspace.
