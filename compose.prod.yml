@@ -1,0 +1,59 @@
+# Production compose (TN-29): PostgreSQL plus one back-end image that serves the
+# API and the built front-end from the same origin (ADR-0006). This is the
+# "fake production" for the second PC: no TLS, no registry and no reverse proxy.
+# Clone the repository there and run:
+#
+#   docker compose -f compose.prod.yml up -d --build
+#
+# Every variable and its default is documented in .env.example at the repository
+# root; the defaults below are enough to start with no setup. The project name
+# keeps this stack's containers and `pgdata` volume separate from compose.dev.yml.
+name: familyapp-prod
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      # The official image creates the role and database on first start, so
+      # db/bootstrap.sql is only for the host-run flow.
+      POSTGRES_USER: ${POSTGRES_USER:-familyapp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-familyapp}
+      POSTGRES_DB: ${POSTGRES_DB:-familyapp}
+    volumes:
+      # A named volume avoids host ownership pitfalls and survives `down`/`up`.
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # The API waits for this, so Flyway never races the database.
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-familyapp} -d ${POSTGRES_DB:-familyapp}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+      args:
+        # Same-origin relative base: the SPA calls /api/v1 on whatever host or
+        # LAN device serves it, so one image is host-agnostic.
+        VITE_API_BASE_URL: /api/v1
+    image: familyapp-backend
+    ports:
+      - "8070:8070"
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-familyapp}
+      DB_USERNAME: ${POSTGRES_USER:-familyapp}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-familyapp}
+      PHOTOS_DIR: /app/data/photos
+    volumes:
+      # DNI photos live outside PostgreSQL; the bind mount matches PHOTOS_DIR.
+      - ./data/photos:/app/data/photos
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:

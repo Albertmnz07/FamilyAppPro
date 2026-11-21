@@ -4,9 +4,19 @@
 import { getToken } from "../auth/token";
 import { ApiError } from "./problem";
 
-/** Absolute API base URL, overridable per environment (ADR-0006). */
+const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8070/api/v1";
+
+/**
+ * Absolute API base URL, overridable per environment (ADR-0006).
+ *
+ * Development bakes an absolute `http://localhost:8070/api/v1`. The production
+ * image bakes the same-origin relative `/api/v1`, which is resolved against the
+ * page origin so one build works from any host or LAN device.
+ */
 export const apiBaseUrl = (
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8070/api/v1"
+  configuredBaseUrl.startsWith("/")
+    ? new URL(configuredBaseUrl, window.location.origin).toString()
+    : configuredBaseUrl
 ).replace(/\/+$/, "");
 
 export type QueryParams = Record<string, string | number | boolean | undefined>;
@@ -24,7 +34,8 @@ export function buildUrl(path: string, query?: QueryParams): string {
 
 /**
  * Resolves a server-relative URL taken from a DTO (e.g. a DNI photo URL)
- * against the API origin, never against the app's origin in development.
+ * against the API origin — the page origin itself in the same-origin production
+ * build, a separate host in development.
  */
 export function resolveApiUrl(path: string): string {
   return new URL(path, `${new URL(apiBaseUrl).origin}/`).toString();

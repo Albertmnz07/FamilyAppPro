@@ -5,6 +5,7 @@ import { jsonResponse } from "../test/http";
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
   clearToken();
 });
 
@@ -125,6 +126,19 @@ describe("resolveApiUrl", () => {
   it("leaves an already absolute URL alone", () => {
     expect(resolveApiUrl("http://localhost:8070/api/v1/photos/front")).toBe(
       "http://localhost:8070/api/v1/photos/front",
+    );
+  });
+});
+
+describe("same-origin production base URL", () => {
+  it("resolves a relative VITE_API_BASE_URL against the page origin", async () => {
+    vi.stubEnv("VITE_API_BASE_URL", "/api/v1");
+    vi.resetModules();
+    const relative = await import("./transport");
+
+    expect(relative.buildUrl("/families")).toBe(`${window.location.origin}/api/v1/families`);
+    expect(relative.resolveApiUrl("/api/v1/families/f1/members/p1/dni/front")).toBe(
+      `${window.location.origin}/api/v1/families/f1/members/p1/dni/front`,
     );
   });
 });
