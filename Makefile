@@ -3,8 +3,8 @@
 # build. Run `make` on its own to list every target.
 #
 # The two compose files publish the same port (8070), so only one runs at a
-# time. The production targets stop the production stack before rebuilding, so
-# repeated `make prod` never piles up containers.
+# time. The production `up` targets recreate only the services whose image or
+# config changed, so repeated deploys never pile up containers.
 #
 # Data lives outside the containers: the `pgdata` named volume holds the
 # database and the bind-mounted `./data/photos` holds the DNI photos. `down`
@@ -18,7 +18,7 @@ JAR          := target/demo-0.0.1-SNAPSHOT.jar
 
 .PHONY: help \
         dev dev-detached dev-down dev-restart dev-logs \
-        prod prod-down prod-logs \
+        prod prod-start prod-rebuild prod-down prod-logs \
         db-reset-dev db-reset-prod \
         test test-backend test-frontend check \
         build run clean
@@ -49,10 +49,18 @@ dev-restart:
 dev-logs:
 	$(DEV_COMPOSE) logs -f
 
-## prod: stop the production stack, then rebuild and start it detached
+## prod: rebuild and redeploy the changed production services
 prod:
-	$(PROD_COMPOSE) down
 	$(PROD_COMPOSE) up -d --build
+
+## prod-start: start the production stack without rebuilding images
+prod-start:
+	$(PROD_COMPOSE) up -d --no-build
+
+## prod-rebuild: force a full rebuild of the API image, then redeploy
+prod-rebuild:
+	$(PROD_COMPOSE) build --no-cache api
+	$(PROD_COMPOSE) up -d
 
 ## prod-down: stop the production stack (keeps pgdata and data/photos)
 prod-down:

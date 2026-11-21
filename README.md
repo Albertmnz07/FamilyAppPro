@@ -44,12 +44,13 @@ cd FamilyAppPro
 make prod
 ```
 
-`make prod` stops any stack still running from an earlier deploy, then rebuilds and restarts it detached:
+`make prod` rebuilds and redeploys the production services that changed:
 
 ```bash
-docker compose -f compose.prod.yml down
 docker compose -f compose.prod.yml up -d --build
 ```
+
+Repeated deploys recreate only the services whose image or config changed, so containers never pile up. To start the stack without touching the images, `make prod-start` runs `docker compose -f compose.prod.yml up -d --no-build`. To discard the build cache and rebuild the API image from scratch, `make prod-rebuild` runs `docker compose -f compose.prod.yml build --no-cache api` and then `docker compose -f compose.prod.yml up -d`.
 
 Open <http://localhost:8070> on that PC, or `http://<LAN-IP>:8070` from another device on the same LAN (find the address with `hostname -I` on Linux or `ipconfig` on Windows). Only PostgreSQL and one back-end image run: the jar serves the API and the built front-end from the same origin, as [ADR-0006](docs/adr/0006-frontend-location-and-api-base-url.md) requires. The production build bakes the **relative** `/api/v1` into the front-end, so the same image works for any hostname or LAN address without rebuilding; development uses the absolute URL because the browser runs on the host. This is a trusted-LAN deployment exercise: no TLS, registry or non-default credentials.
 
