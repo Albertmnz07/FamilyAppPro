@@ -1,0 +1,76 @@
+# Development stack (TN-28, spec #43). One command reproduces the environment
+# on any machine:
+#
+#   docker compose -f compose.dev.yml up
+#
+# Three services: PostgreSQL, the API (back-end `dev` target with the repository
+# bind-mounted, running `spring-boot:run`) and the Vite dev server (front-end
+# `dev` target). Both app containers publish to the host, so the browser talks
+# to Vite on 5173 and to the API on 8070 — the CORS origin the API already
+# allows by default (ADR-0006). Database data lives in the `pgdata` volume and
+# DNI photos in the bind-mounted `./data/photos`, so `docker compose down`/`up`
+# keeps both. Production is a separate, self-contained file (compose.prod.yml).
+
+# A dev-specific project name keeps this stack's `pgdata` volume out of the way
+# of the production compose, which would otherwise share the directory's
+# default project name — and therefore its database.
+name: familyapp-dev
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-familyapp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-familyapp}
+      POSTGRES_DB: ${POSTGRES_DB:-familyapp}
+    volumes:
+      # A named volume rather than a bind mount: host directory ownership fights
+      # PostgreSQL otherwise. Survives `docker compose down`.
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      # The API gates on this (`depends_on: service_healthy`), so Flyway never
+      # races the database. `$$` defers the names to the container's own env.
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # Not published to the host: only the API needs it, over the compose
+    # network, so a host PostgreSQL on 5432 does not conflict.
+
+  api:
+    build:
+      context: .
+      target: dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-familyapp}
+      DB_USERNAME: ${POSTGRES_USER:-familyapp}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-familyapp}
+      # The host's ./data/photos, reached through the repository bind mount.
+      PHOTOS_DIR: /workspace/data/photos
+    ports:
+      - "8070:8070"
+    volumes:
+      # The repository bind-mounted so `spring-boot:run` compiles host edits
+      # without rebuilding the image, and so the photo store is the host's
+      # ./data/photos.
+      - .:/workspace
+
+  frontend:
+    build:
+      context: ./frontend
+      target: dev
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8070/api/v1}
+    ports:
+      - "5173:5173"
+    volumes:
+      # Source bind-mounted for hot reload; the anonymous volume keeps the
+      # image's `npm ci` install instead of the host's node_modules.
+      - ./frontend:/app
+      - /app/node_modules
+
+volumes:
+  pgdata:
