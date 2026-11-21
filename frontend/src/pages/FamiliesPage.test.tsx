@@ -131,7 +131,7 @@ describe("FamiliesPage", () => {
     await user.click(screen.getByRole("button", { name: "Siguiente" }));
     expect(await screen.findByText("Página 2 de 3")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Familia 1" })).toBeInTheDocument();
-    expect(fetchMock.mock.calls[1][0]).toBe("http://localhost:8080/api/v1/me/families?page=1&size=20");
+    expect(fetchMock.mock.calls[1][0]).toBe("http://localhost:8070/api/v1/me/families?page=1&size=20");
 
     await user.click(screen.getByRole("button", { name: "Siguiente" }));
     expect(await screen.findByText("Página 3 de 3")).toBeInTheDocument();
@@ -175,7 +175,7 @@ describe("FamiliesPage", () => {
     expect(await screen.findByRole("link", { name: "Nueva familia" })).toBeInTheDocument();
     expect(name).toHaveValue("");
     const postCall = fetchMock.mock.calls.find(([, init]) => init?.method === "POST");
-    expect(postCall?.[0]).toBe("http://localhost:8080/api/v1/families");
+    expect(postCall?.[0]).toBe("http://localhost:8070/api/v1/families");
     expect(postCall?.[1].body).toBe(JSON.stringify({ name: "Nueva familia" }));
     expect(postCall?.[1].headers.get("Authorization")).toBe("Bearer token-1");
   });

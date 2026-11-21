@@ -55,7 +55,7 @@ Todos son sub-issues de #26 y llevan la etiqueta `ready-for-agent`.
 
 - `RegisterPage` sigue pidiendo DNI con patrón/letra y dos fotos obligatorias: eso es TN-22.
 - `src/api/transport.ts` restringe `method` a `GET|POST|DELETE`: TN-21/TN-22 añadirán `PUT`.
-- `frontend/openapi.json` y `src/api/schema.d.ts` **aún reflejan el contrato antiguo**. Hay que ejecutar `npm run api:refresh` con el backend corriendo en `http://localhost:8080/v3/api-docs` (necesita la PostgreSQL local; no inventar el snapshot a mano).
+- `frontend/openapi.json` y `src/api/schema.d.ts` **aún reflejan el contrato antiguo**. Hay que ejecutar `npm run api:refresh` con el backend corriendo en `http://localhost:8070/v3/api-docs` (necesita la PostgreSQL local; no inventar el snapshot a mano).
 - `FamilyWorkspacePage` muestra las fotos sin acción de clic; no existe lightbox ni estado «Sin fotos del DNI».
 - No existe aún `/mi-perfil` ni enlace en `AppShell`.
 - `getUserMedia`, canvas y compresión: ningún uso previo; sin dependencias nuevas.

@@ -37,7 +37,7 @@ rm -rf data/photos
 java -jar target/demo-0.0.1-SNAPSHOT.jar
 ```
 
-Then open <http://localhost:8080>.
+Then open <http://localhost:8070>.
 
 The `package` phase runs `npm ci` and `npm run build` inside `frontend/` and copies `frontend/dist` into the jar's static resources, so the one process serves both the app and the API at the same origin — no second server and no CORS involved. Building the artifact requires npm on the build machine; `./mvnw test` does not.
 
@@ -82,24 +82,24 @@ Everything has a working default for local use; override with environment variab
 | `DB_PASSWORD` | `familyapp` | database password |
 | `PHOTOS_DIR` | `./data/photos` | where DNI photos are stored on disk |
 | `CORS_ALLOWED_ORIGINS` | `http://localhost:3000,http://localhost:5173` | origins allowed to call the API in development |
-| `VITE_API_BASE_URL` | `http://localhost:8080/api/v1` | API base URL compiled into the front-end |
+| `VITE_API_BASE_URL` | `http://localhost:8070/api/v1` | API base URL compiled into the front-end |
 
-The server listens on port 8080. If you change it with `SERVER_PORT`, rebuild the front-end with a matching `VITE_API_BASE_URL`, because the built app carries the API URL rather than discovering it.
+The server listens on port 8070. If you change it with `SERVER_PORT`, rebuild the front-end with a matching `VITE_API_BASE_URL`, because the built app carries the API URL rather than discovering it.
 
 DNI photos live outside PostgreSQL, in the local photo store rooted at `PHOTOS_DIR`; the database keeps only the photo keys. Uploads are capped at 10 MB per photo and 30 MB per request.
 
 ## API
 
-- Base path: `http://localhost:8080/api/v1`
-- OpenAPI description: `http://localhost:8080/v3/api-docs`
-- Swagger UI: `http://localhost:8080/swagger-ui.html`
+- Base path: `http://localhost:8070/api/v1`
+- OpenAPI description: `http://localhost:8070/v3/api-docs`
+- Swagger UI: `http://localhost:8070/swagger-ui.html`
 
 ### Authentication
 
 Login exchanges the credentials for a bearer token:
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/auth/login \
+curl -X POST http://localhost:8070/api/v1/auth/login \
   -H 'Content-Type: application/json' \
   -d '{"username":"<username>","password":"<password>"}'
 ```
@@ -144,7 +144,7 @@ The schema is owned by the ordered migrations in `src/main/resources/db/migratio
 
 ## Front-end
 
-The React + TypeScript + Vite app lives in `frontend/` (see `docs/adr/0006-frontend-location-and-api-base-url.md`). It reaches the API by absolute URL from `VITE_API_BASE_URL`, defaulting to `http://localhost:8080/api/v1`; there is no dev proxy, so development relies on the CORS origins above.
+The React + TypeScript + Vite app lives in `frontend/` (see `docs/adr/0006-frontend-location-and-api-base-url.md`). It reaches the API by absolute URL from `VITE_API_BASE_URL`, defaulting to `http://localhost:8070/api/v1`; there is no dev proxy, so development relies on the CORS origins above.
 
 The production build is integrated into the single Spring artifact: `npm run build` (which runs `tsc -b && vite build`) emits `frontend/dist`, and the Maven `package` phase runs `npm ci` and `npm run build` in `frontend/` and copies `frontend/dist` into the jar's static resources (`target/classes/static`). The npm steps are bound to `prepare-package`, after the test phase, so `./mvnw test` never needs Node.
 
@@ -167,7 +167,7 @@ The backend tests run the same Flyway migrations against H2, so a migration that
 
 ## Known limitations
 
-- **No SPA fallback.** The jar serves the app at `/` and the hashed assets, but reloading a client route such as `/families/{id}` returns 404. Enter the app at `http://localhost:8080` and navigate from there; deep-link forwarding needs a backend route, which the front-end spec deliberately excluded.
+- **No SPA fallback.** The jar serves the app at `/` and the hashed assets, but reloading a client route such as `/families/{id}` returns 404. Enter the app at `http://localhost:8070` and navigate from there; deep-link forwarding needs a backend route, which the front-end spec deliberately excluded.
 - **Invites are single-use and expire after seven days**, and the app shows no invite history.
 - **No password reset or account deletion** yet.
 - **Photos are local files** under `PHOTOS_DIR`, so they do not travel with the database.

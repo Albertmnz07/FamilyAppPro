@@ -64,7 +64,7 @@ describe("listFamilyMembers", () => {
       size: 20,
     });
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://localhost:8080/api/v1/families/f1/members?page=1&size=20");
+    expect(url).toBe("http://localhost:8070/api/v1/families/f1/members?page=1&size=20");
     expect(init.method).toBe("GET");
     expect(init.headers.get("Authorization")).toBe("Bearer token-1");
   });
@@ -91,7 +91,7 @@ describe("getMemberDni", () => {
       backPhotoUrl: "/api/v1/families/f1/members/p1/dni/back",
     });
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://localhost:8080/api/v1/families/f1/members/p1/dni");
+    expect(url).toBe("http://localhost:8070/api/v1/families/f1/members/p1/dni");
     expect(init.headers.get("Authorization")).toBe("Bearer token-1");
   });
 
@@ -127,7 +127,7 @@ describe("revokeConsent", () => {
     await expect(revokeConsent("f1", "p1")).resolves.toBeUndefined();
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://localhost:8080/api/v1/families/f1/members/p1/consent");
+    expect(url).toBe("http://localhost:8070/api/v1/families/f1/members/p1/consent");
     expect(init.method).toBe("DELETE");
     expect(init.headers.get("Authorization")).toBe("Bearer token-1");
   });
@@ -142,7 +142,7 @@ describe("removeMember", () => {
     await expect(removeMember("f1", "p2")).resolves.toBeUndefined();
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://localhost:8080/api/v1/families/f1/members/p2");
+    expect(url).toBe("http://localhost:8070/api/v1/families/f1/members/p2");
     expect(init.method).toBe("DELETE");
     expect(init.headers.get("Authorization")).toBe("Bearer token-1");
   });
@@ -160,7 +160,7 @@ describe("getDniPhoto", () => {
 
     expect(photo).toBeInstanceOf(Blob);
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://localhost:8080/api/v1/families/f1/members/p1/dni/front");
+    expect(url).toBe("http://localhost:8070/api/v1/families/f1/members/p1/dni/front");
     expect(init.headers.get("Authorization")).toBe("Bearer token-1");
   });
 });

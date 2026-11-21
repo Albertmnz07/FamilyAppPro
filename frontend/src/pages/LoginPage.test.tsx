@@ -85,7 +85,7 @@ describe("LoginPage", () => {
     expect(getToken()).toBe("token-1");
     expect(getPersonaId()).toBe("p1");
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://localhost:8080/api/v1/auth/login");
+    expect(url).toBe("http://localhost:8070/api/v1/auth/login");
     expect(init.headers.get("Authorization")).toBeNull();
   });
 

@@ -4,7 +4,7 @@
 // drift into a reviewable diff.
 import { writeFile } from "node:fs/promises";
 
-const docsUrl = process.env.API_DOCS_URL ?? "http://localhost:8080/v3/api-docs";
+const docsUrl = process.env.API_DOCS_URL ?? "http://localhost:8070/v3/api-docs";
 const snapshotPath = new URL("../openapi.json", import.meta.url);
 
 const response = await fetch(docsUrl, { headers: { Accept: "application/json" } });

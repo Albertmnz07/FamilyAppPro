@@ -23,7 +23,7 @@ describe("register", () => {
 
     expect(persona).toEqual({ id: "p1", username: "ana", dni: "12345678Z" });
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://localhost:8080/api/v1/personas");
+    expect(url).toBe("http://localhost:8070/api/v1/personas");
     expect(init.method).toBe("POST");
     expect(init.headers.get("Authorization")).toBeNull();
     const form = init.body as FormData;
@@ -54,7 +54,7 @@ describe("getMe", () => {
       backPhotoUrl: null,
     });
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://localhost:8080/api/v1/personas/me");
+    expect(url).toBe("http://localhost:8070/api/v1/personas/me");
     expect(init.method).toBe("GET");
     expect(init.headers.get("Authorization")).toBe("Bearer token-1");
   });
@@ -92,7 +92,7 @@ describe("uploadDniPhotos", () => {
       backPhotoUrl: null,
     });
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://localhost:8080/api/v1/personas/me/dni/photos");
+    expect(url).toBe("http://localhost:8070/api/v1/personas/me/dni/photos");
     expect(init.method).toBe("PUT");
     expect(init.headers.get("Authorization")).toBe("Bearer token-1");
     const form = init.body as FormData;

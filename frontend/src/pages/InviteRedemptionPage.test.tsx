@@ -49,7 +49,7 @@ describe("InviteRedemptionPage", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://localhost:8080/api/v1/invites/AB12CD/redemption");
+    expect(url).toBe("http://localhost:8070/api/v1/invites/AB12CD/redemption");
     expect(init.method).toBe("POST");
     expect(init.headers.get("Authorization")).toBe("Bearer token-1");
   });

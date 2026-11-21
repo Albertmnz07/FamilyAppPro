@@ -116,7 +116,7 @@ describe("RegisterPage", () => {
     expect(currentPath()).toBe("/login");
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://localhost:8080/api/v1/personas");
+    expect(url).toBe("http://localhost:8070/api/v1/personas");
     expect(init.method).toBe("POST");
     expect(init.headers.get("Authorization")).toBeNull();
     const body = init.body as FormData;

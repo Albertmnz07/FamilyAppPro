@@ -20,7 +20,7 @@ describe("getFamily", () => {
 
     expect(family).toEqual({ id: "f1", name: "Rojas", adminPersonaId: "p1" });
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://localhost:8080/api/v1/families/f1");
+    expect(url).toBe("http://localhost:8070/api/v1/families/f1");
     expect(init.method).toBe("GET");
     expect(init.headers.get("Authorization")).toBe("Bearer token-1");
   });
@@ -56,7 +56,7 @@ describe("listMyFamilies", () => {
       size: 20,
     });
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://localhost:8080/api/v1/me/families?page=0&size=20");
+    expect(url).toBe("http://localhost:8070/api/v1/me/families?page=0&size=20");
     expect(init.method).toBe("GET");
     expect(init.headers.get("Authorization")).toBe("Bearer token-1");
   });
@@ -74,7 +74,7 @@ describe("createFamily", () => {
 
     expect(family).toEqual({ id: "f3", name: "Nueva familia", adminPersonaId: "p1" });
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://localhost:8080/api/v1/families");
+    expect(url).toBe("http://localhost:8070/api/v1/families");
     expect(init.method).toBe("POST");
     expect(init.headers.get("Authorization")).toBe("Bearer token-1");
     expect(init.headers.get("Content-Type")).toBe("application/json");

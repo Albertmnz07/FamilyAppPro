@@ -18,7 +18,7 @@ describe("request", () => {
 
     expect(result).toEqual({ id: "abc" });
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://localhost:8080/api/v1/personas/me");
+    expect(url).toBe("http://localhost:8070/api/v1/personas/me");
     expect(init.method).toBe("GET");
     expect(init.headers.get("Authorization")).toBe("Bearer token-123");
   });
@@ -30,7 +30,7 @@ describe("request", () => {
     await request({ method: "POST", path: "/auth/login", body: { username: "ana", password: "secret" }, authorized: false });
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://localhost:8080/api/v1/auth/login");
+    expect(url).toBe("http://localhost:8070/api/v1/auth/login");
     expect(init.method).toBe("POST");
     expect(init.headers.get("Authorization")).toBeNull();
     expect(init.headers.get("Content-Type")).toBe("application/json");
@@ -54,7 +54,7 @@ describe("request", () => {
     await request({ method: "GET", path: "/me/families", query: { page: 1, size: 20 }, authorized: true });
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://localhost:8080/api/v1/me/families?page=1&size=20");
+    expect(url).toBe("http://localhost:8070/api/v1/me/families?page=1&size=20");
     expect(init.body).toBeUndefined();
   });
 
@@ -77,7 +77,7 @@ describe("request", () => {
 
     expect(blob).toBeInstanceOf(Blob);
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://localhost:8080/api/v1/families/f1/members/p1/dni/front");
+    expect(url).toBe("http://localhost:8070/api/v1/families/f1/members/p1/dni/front");
     expect(init.headers.get("Authorization")).toBe("Bearer token-1");
   });
 
@@ -90,7 +90,7 @@ describe("request", () => {
     await request({ method: "POST", path: "/personas", form, authorized: false });
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://localhost:8080/api/v1/personas");
+    expect(url).toBe("http://localhost:8070/api/v1/personas");
     expect(init.method).toBe("POST");
     expect(init.headers.get("Content-Type")).toBeNull();
     expect(init.headers.get("Authorization")).toBeNull();
@@ -100,31 +100,31 @@ describe("request", () => {
 
 describe("buildUrl", () => {
   it("joins the default base URL and the path without double slashes", () => {
-    expect(buildUrl("/auth/login")).toBe("http://localhost:8080/api/v1/auth/login");
+    expect(buildUrl("/auth/login")).toBe("http://localhost:8070/api/v1/auth/login");
   });
 
   it("appends defined query parameters and skips undefined ones", () => {
     expect(buildUrl("/me/families", { page: 0, size: 20, sort: undefined })).toBe(
-      "http://localhost:8080/api/v1/me/families?page=0&size=20",
+      "http://localhost:8070/api/v1/me/families?page=0&size=20",
     );
   });
 
   it("encodes characters that are not allowed raw in query strings", () => {
     // URLSearchParams uses application/x-www-form-urlencoded encoding: space is `+`.
-    expect(buildUrl("/thing", { q: "a b&c" })).toBe("http://localhost:8080/api/v1/thing?q=a+b%26c");
+    expect(buildUrl("/thing", { q: "a b&c" })).toBe("http://localhost:8070/api/v1/thing?q=a+b%26c");
   });
 });
 
 describe("resolveApiUrl", () => {
   it("resolves a relative URL from a DTO against the API origin, not the app origin", () => {
     expect(resolveApiUrl("/api/v1/families/f1/members/p1/dni/front")).toBe(
-      "http://localhost:8080/api/v1/families/f1/members/p1/dni/front",
+      "http://localhost:8070/api/v1/families/f1/members/p1/dni/front",
     );
   });
 
   it("leaves an already absolute URL alone", () => {
-    expect(resolveApiUrl("http://localhost:8080/api/v1/photos/front")).toBe(
-      "http://localhost:8080/api/v1/photos/front",
+    expect(resolveApiUrl("http://localhost:8070/api/v1/photos/front")).toBe(
+      "http://localhost:8070/api/v1/photos/front",
     );
   });
 });

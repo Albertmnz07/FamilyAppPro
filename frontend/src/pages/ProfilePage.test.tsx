@@ -104,7 +104,7 @@ describe("ProfilePage", () => {
 
     expect(await screen.findByText(profileSavedNotice)).toBeInTheDocument();
     const call = putCall(fetchMock);
-    expect(call?.[0]).toBe("http://localhost:8080/api/v1/personas/me/dni/photos");
+    expect(call?.[0]).toBe("http://localhost:8070/api/v1/personas/me/dni/photos");
     expect(call?.[1].headers.get("Authorization")).toBe("Bearer token-1");
     const form = call?.[1].body as FormData;
     expect(form.get("frontPhoto")).toBe(front);

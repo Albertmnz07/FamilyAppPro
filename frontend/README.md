@@ -6,7 +6,7 @@ React + TypeScript + Vite app for the family circuit (spec #14). Spanish UI, mob
 
 | Command | What it does |
 | --- | --- |
-| `npm run dev` | Dev server on `http://localhost:5173`; talks to `http://localhost:8080/api/v1` by default (ADR-0006). |
+| `npm run dev` | Dev server on `http://localhost:5173`; talks to `http://localhost:8070/api/v1` by default (ADR-0006). |
 | `npm run test` | Vitest + Testing Library suite. |
 | `npm run typecheck` | `tsc -b`. |
 | `npm run lint` | oxlint. |

@@ -60,9 +60,9 @@ Guías a recuperar **antes de escribir** la UI: `forms`, `accessible-error-annou
 ### 2.1 Stack y ejecución
 
 - Maven, un solo módulo, Java 21, Spring Boot 4.1.2. Sin `spring-boot-starter-security`.
-- `springdoc-openapi` 3.2.0 → OpenAPI en `http://localhost:8080/v3/api-docs`, Swagger UI en `/swagger-ui.html`.
+- `springdoc-openapi` 3.2.0 → OpenAPI en `http://localhost:8070/v3/api-docs`, Swagger UI en `/swagger-ui.html`.
 - PostgreSQL `jdbc:postgresql://localhost:5432/familyapp` (`familyapp`/`familyapp`), Flyway + Hibernate `validate`.
-- Backend en `http://localhost:8080`; prefijo `/api/v1`.
+- Backend en `http://localhost:8070`; prefijo `/api/v1`.
 - CORS (`WebConfig.java:31-37`): `GET, POST, DELETE, OPTIONS`; orígenes `http://localhost:3000,http://localhost:5173` (env `CORS_ALLOWED_ORIGINS`); `allowedHeaders("*")`; **`allowCredentials=false`**; sin headers expuestos.
 - No existe scaffold frontend: sin `package.json`, `tsconfig`, `vite.config`, ni `.ts/.tsx`. `src/main/resources/static/` y `templates/` están vacíos. No hay frontend en otras ramas ni en el historial.
 
@@ -181,7 +181,7 @@ Forma `Page` de Spring Data: `content[]`, `pageable`, `last`, `totalElements`, `
 **Q1 — Ubicación del proyecto frontend.** ¿Dónde vive la app: directorio `frontend/` en este mismo repo, `web/`, o repo separado? ¿Se añade tooling de monorepo?
 ➡️ `frontend/` en este repo, Vite como herramienta, sin monorepo todavía: el backend es un único módulo y no hay señales de multi-package.
 
-**Q2 — Conexión a la API en desarrollo.** ¿Proxy de Vite `/api` → `http://localhost:8080`, o URL absoluta configurable? (CORS ya permite 5173.)
+**Q2 — Conexión a la API en desarrollo.** ¿Proxy de Vite `/api` → `http://localhost:8070`, o URL absoluta configurable? (CORS ya permite 5173.)
 ➡️ Proxy de Vite con `baseURL='/api/v1'`; la misma base se configura por env para producción. Evita depender de CORS en local y mantiene un único punto de cambio.
 
 **Q3 — Alcance del primer corte.** ¿Qué flujos se implementan primero? El backend ya soporta: registro con fotos, login, crear/listar/ver familias, listar miembros, emitir/canjear invites, ver DNI/fotos, revocar consentimiento y remover miembros.

@@ -6,7 +6,7 @@ import { ApiError } from "./problem";
 
 /** Absolute API base URL, overridable per environment (ADR-0006). */
 export const apiBaseUrl = (
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080/api/v1"
+  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8070/api/v1"
 ).replace(/\/+$/, "");
 
 export type QueryParams = Record<string, string | number | boolean | undefined>;

@@ -7,7 +7,7 @@ import { clearToken, setPersonaId, setToken } from "../auth/token";
 import { jsonResponse } from "../test/http";
 import { FamilyWorkspacePage } from "./FamilyWorkspacePage";
 
-const familyUrl = "http://localhost:8080/api/v1/families/f1";
+const familyUrl = "http://localhost:8070/api/v1/families/f1";
 
 function renderWorkspace() {
   const queryClient = new QueryClient({
@@ -117,7 +117,7 @@ describe("FamilyWorkspacePage", () => {
     expect(within(betoRow!).queryByRole("button")).not.toBeInTheDocument();
 
     const [url, init] = membersCall(fetchMock)!;
-    expect(url).toBe("http://localhost:8080/api/v1/families/f1/members?page=0&size=20");
+    expect(url).toBe("http://localhost:8070/api/v1/families/f1/members?page=0&size=20");
     expect(init.headers.get("Authorization")).toBe("Bearer token-1");
   });
 
@@ -159,8 +159,8 @@ describe("FamilyWorkspacePage", () => {
     ).toHaveAttribute("src", "blob:back");
     const frontCall = fetchMock.mock.calls.find(([url]) => String(url).endsWith("/dni/front"));
     const backCall = fetchMock.mock.calls.find(([url]) => String(url).endsWith("/dni/back"));
-    expect(frontCall?.[0]).toBe("http://localhost:8080/api/v1/families/f1/members/p1/dni/front");
-    expect(backCall?.[0]).toBe("http://localhost:8080/api/v1/families/f1/members/p1/dni/back");
+    expect(frontCall?.[0]).toBe("http://localhost:8070/api/v1/families/f1/members/p1/dni/front");
+    expect(backCall?.[0]).toBe("http://localhost:8070/api/v1/families/f1/members/p1/dni/back");
     expect(frontCall?.[1].headers.get("Authorization")).toBe("Bearer token-1");
     expect(backCall?.[1].headers.get("Authorization")).toBe("Bearer token-1");
     expect(createObjectURL).toHaveBeenCalledTimes(2);
@@ -218,7 +218,7 @@ describe("FamilyWorkspacePage", () => {
     expect(screen.getByRole("rowheader", { name: /miembro1/ })).toBeInTheDocument();
     const secondPageCall = fetchMock.mock.calls.find(([url]) => String(url).includes("page=1"));
     expect(secondPageCall?.[0]).toBe(
-      "http://localhost:8080/api/v1/families/f1/members?page=1&size=20",
+      "http://localhost:8070/api/v1/families/f1/members?page=1&size=20",
     );
     expect(screen.getByRole("button", { name: "Siguiente" })).toBeDisabled();
     await user.click(screen.getByRole("button", { name: "Anterior" }));
@@ -288,7 +288,7 @@ describe("FamilyWorkspacePage invite issuance", () => {
     expect(expiry!.textContent).not.toBe(expiresAt);
 
     const postCall = fetchMock.mock.calls.find(([, init]) => init?.method === "POST");
-    expect(postCall?.[0]).toBe("http://localhost:8080/api/v1/families/f1/invites");
+    expect(postCall?.[0]).toBe("http://localhost:8070/api/v1/families/f1/invites");
     expect(postCall?.[1].headers.get("Authorization")).toBe("Bearer token-1");
   });
 
@@ -456,7 +456,7 @@ describe("FamilyWorkspacePage consent revocation", () => {
 
     await waitFor(() => {
       const call = deleteCall(fetchMock, "/members/p1/consent");
-      expect(call?.[0]).toBe("http://localhost:8080/api/v1/families/f1/members/p1/consent");
+      expect(call?.[0]).toBe("http://localhost:8070/api/v1/families/f1/members/p1/consent");
       expect(call?.[1].headers.get("Authorization")).toBe("Bearer token-1");
     });
     expect(await rowFor(/ana/).findByText("Sin consentimiento")).toBeInTheDocument();
@@ -506,7 +506,7 @@ describe("FamilyWorkspacePage member removal", () => {
 
     await waitFor(() => {
       expect(deleteCall(fetchMock, "/members/p3")?.[0]).toBe(
-        "http://localhost:8080/api/v1/families/f1/members/p3",
+        "http://localhost:8070/api/v1/families/f1/members/p3",
       );
     });
     await waitFor(() => expect(screen.queryByRole("rowheader", { name: /carla/ })).not.toBeInTheDocument());

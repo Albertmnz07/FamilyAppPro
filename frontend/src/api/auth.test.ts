@@ -17,7 +17,7 @@ describe("login", () => {
 
     expect(response).toEqual({ token: "t", personaId: "p", username: "ana" });
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://localhost:8080/api/v1/auth/login");
+    expect(url).toBe("http://localhost:8070/api/v1/auth/login");
     expect(init.method).toBe("POST");
     expect(init.headers.get("Authorization")).toBeNull();
     expect(init.headers.get("Content-Type")).toBe("application/json");

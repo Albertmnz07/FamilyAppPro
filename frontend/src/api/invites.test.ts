@@ -33,7 +33,7 @@ describe("redeemInvite", () => {
 
     expect(redemption).toEqual({ familyId: "f1", personaId: "p1", status: "ACCEPTED" });
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://localhost:8080/api/v1/invites/AB12CD/redemption");
+    expect(url).toBe("http://localhost:8070/api/v1/invites/AB12CD/redemption");
     expect(init.method).toBe("POST");
     expect(init.headers.get("Authorization")).toBe("Bearer token-1");
   });
@@ -58,7 +58,7 @@ describe("issueInvite", () => {
 
     expect(invite).toEqual({ code: "AB12CD", familyId: "f1", expiresAt: "2026-11-25T10:00:00Z" });
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://localhost:8080/api/v1/families/f1/invites");
+    expect(url).toBe("http://localhost:8070/api/v1/families/f1/invites");
     expect(init.method).toBe("POST");
     expect(init.headers.get("Authorization")).toBe("Bearer token-1");
   });
