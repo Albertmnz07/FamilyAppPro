@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import java.io.IOException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -22,7 +23,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/v1/personas")
@@ -41,14 +41,16 @@ public class PersonaController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     public PersonaResponse register(
-            @RequestParam @NotBlank @Pattern(
-                    regexp = "[A-Za-z0-9._-]{3,30}",
-                    message = "must be 3-30 characters: letters, digits, dots, underscores or hyphens") String username,
+            @RequestParam
+                    @NotBlank
+                    @Pattern(
+                            regexp = "[A-Za-z0-9._-]{3,30}",
+                            message =
+                                    "must be 3-30 characters: letters, digits, dots, underscores or hyphens")
+                    String username,
             @RequestParam @NotBlank String dni,
-            @RequestParam @NotBlank @Size(
-                    min = 3,
-                    max = 100,
-                    message = "must be 3-100 characters") String password) {
+            @RequestParam @NotBlank @Size(min = 3, max = 100, message = "must be 3-100 characters")
+                    String password) {
         return PersonaResponse.of(personas.register(username, dni, password));
     }
 
@@ -61,8 +63,10 @@ public class PersonaController {
     public PersonaResponse updateDniPhotos(
             @Parameter(hidden = true) @ActingPersona Persona persona,
             @RequestParam(required = false) MultipartFile frontPhoto,
-            @RequestParam(required = false) MultipartFile backPhoto) throws IOException {
-        return PersonaResponse.of(personas.updateDniPhotos(persona, uploadOf(frontPhoto), uploadOf(backPhoto)));
+            @RequestParam(required = false) MultipartFile backPhoto)
+            throws IOException {
+        return PersonaResponse.of(
+                personas.updateDniPhotos(persona, uploadOf(frontPhoto), uploadOf(backPhoto)));
     }
 
     /** An omitted or empty part means "leave this side as it is". */

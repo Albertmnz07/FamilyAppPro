@@ -7,7 +7,14 @@ type Family = { id: string; name: string | null; adminPersonaId: string };
 // (shape asserted by the backend's ApiIntegrationTest).
 const springPageBody = {
   content: [{ id: "f1", name: "Rojas", adminPersonaId: "p1" }],
-  pageable: { pageNumber: 0, pageSize: 20, sort: { empty: true, sorted: false, unsorted: true }, offset: 0, paged: true, unpaged: false },
+  pageable: {
+    pageNumber: 0,
+    pageSize: 20,
+    sort: { empty: true, sorted: false, unsorted: true },
+    offset: 0,
+    paged: true,
+    unpaged: false,
+  },
   last: true,
   totalElements: 1,
   totalPages: 1,

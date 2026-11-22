@@ -169,23 +169,30 @@ describe("FamilyWorkspacePage", () => {
   it.each([
     [403, "forbidden", "Esta persona no tiene el consentimiento vigente en esta familia."],
     [404, "not-found", "Esta persona ya no es miembro de la familia."],
-  ])("explains a %i on the DNI view without confusing the two causes", async (status, code, message) => {
-    const fetchMock = vi.fn().mockImplementation(
-      routed((url) => {
-        if (url.endsWith("/dni")) {
-          return jsonResponse({ title: "Problem", status, code }, status, "application/problem+json");
-        }
-        return memberPage([ana]);
-      }),
-    );
-    vi.stubGlobal("fetch", fetchMock);
-    renderWorkspace();
+  ])(
+    "explains a %i on the DNI view without confusing the two causes",
+    async (status, code, message) => {
+      const fetchMock = vi.fn().mockImplementation(
+        routed((url) => {
+          if (url.endsWith("/dni")) {
+            return jsonResponse(
+              { title: "Problem", status, code },
+              status,
+              "application/problem+json",
+            );
+          }
+          return memberPage([ana]);
+        }),
+      );
+      vi.stubGlobal("fetch", fetchMock);
+      renderWorkspace();
 
-    await userEvent.setup().click(await screen.findByRole("button", { name: "Ver DNI de ana" }));
+      await userEvent.setup().click(await screen.findByRole("button", { name: "Ver DNI de ana" }));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(message);
-    expect(screen.queryByRole("img")).not.toBeInTheDocument();
-  });
+      expect(await screen.findByRole("alert")).toHaveTextContent(message);
+      expect(screen.queryByRole("img")).not.toBeInTheDocument();
+    },
+  );
 
   it("pages the member list at 20 using the Page metadata", async () => {
     const fetchMock = vi.fn().mockImplementation(
@@ -294,13 +301,18 @@ describe("FamilyWorkspacePage invite issuance", () => {
 
   it("copies the code with one tap and shows feedback", async () => {
     setPersonaId("p1");
-    const fetchMock = vi.fn().mockImplementation(
-      routed((_url, init) =>
-        init?.method === "POST"
-          ? jsonResponse({ code: "AB12CD", familyId: "f1", expiresAt: "2026-11-25T10:30:00Z" }, 201)
-          : memberPage([ana]),
-      ),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(
+        routed((_url, init) =>
+          init?.method === "POST"
+            ? jsonResponse(
+                { code: "AB12CD", familyId: "f1", expiresAt: "2026-11-25T10:30:00Z" },
+                201,
+              )
+            : memberPage([ana]),
+        ),
+      );
     vi.stubGlobal("fetch", fetchMock);
     renderWorkspace();
     const user = userEvent.setup();
@@ -314,13 +326,18 @@ describe("FamilyWorkspacePage invite issuance", () => {
 
   it("tells the Admin to copy by hand when the browser refuses the clipboard", async () => {
     setPersonaId("p1");
-    const fetchMock = vi.fn().mockImplementation(
-      routed((_url, init) =>
-        init?.method === "POST"
-          ? jsonResponse({ code: "AB12CD", familyId: "f1", expiresAt: "2026-11-25T10:30:00Z" }, 201)
-          : memberPage([ana]),
-      ),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(
+        routed((_url, init) =>
+          init?.method === "POST"
+            ? jsonResponse(
+                { code: "AB12CD", familyId: "f1", expiresAt: "2026-11-25T10:30:00Z" },
+                201,
+              )
+            : memberPage([ana]),
+        ),
+      );
     vi.stubGlobal("fetch", fetchMock);
     renderWorkspace();
     const user = userEvent.setup();
@@ -345,13 +362,19 @@ describe("FamilyWorkspacePage invite issuance", () => {
 
   it("explains a forbidden response when a non-admin races the check", async () => {
     setPersonaId("p1");
-    const fetchMock = vi.fn().mockImplementation(
-      routed((_url, init) =>
-        init?.method === "POST"
-          ? jsonResponse({ title: "Forbidden", status: 403, code: "forbidden" }, 403, "application/problem+json")
-          : memberPage([ana]),
-      ),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockImplementation(
+        routed((_url, init) =>
+          init?.method === "POST"
+            ? jsonResponse(
+                { title: "Forbidden", status: 403, code: "forbidden" },
+                403,
+                "application/problem+json",
+              )
+            : memberPage([ana]),
+        ),
+      );
     vi.stubGlobal("fetch", fetchMock);
     renderWorkspace();
     const user = userEvent.setup();
@@ -371,7 +394,9 @@ type MemberRecord = {
   consentInForce: boolean;
 };
 
-function memberRecord(overrides: Partial<MemberRecord> & { personaId: string; username: string }): MemberRecord {
+function memberRecord(
+  overrides: Partial<MemberRecord> & { personaId: string; username: string },
+): MemberRecord {
   return {
     dni: null,
     admin: false,
@@ -434,7 +459,13 @@ describe("FamilyWorkspacePage consent revocation", () => {
   it("revokes the Persona's own Consent only after confirming, then masks the row", async () => {
     setPersonaId("p1");
     const members = [
-      memberRecord({ personaId: "p1", username: "ana", dni: "12345678Z", admin: true, consentInForce: true }),
+      memberRecord({
+        personaId: "p1",
+        username: "ana",
+        dni: "12345678Z",
+        admin: true,
+        consentInForce: true,
+      }),
       memberRecord({ personaId: "p2", username: "beto" }),
     ];
     const fetchMock = statefulWorkspace(members);
@@ -444,13 +475,17 @@ describe("FamilyWorkspacePage consent revocation", () => {
 
     const anaRow = await findRow(/ana/);
     expect(anaRow.getByText("12345678Z")).toBeInTheDocument();
-    expect(rowFor(/beto/).queryByRole("button", { name: "Revocar consentimiento" })).not.toBeInTheDocument();
+    expect(
+      rowFor(/beto/).queryByRole("button", { name: "Revocar consentimiento" }),
+    ).not.toBeInTheDocument();
 
     await user.click(anaRow.getByRole("button", { name: "Revocar consentimiento" }));
 
     expect(deleteCall(fetchMock, "/consent")).toBeUndefined();
     const dialog = await screen.findByRole("dialog");
-    expect(within(dialog).getByRole("heading", { name: "¿Revocar tu consentimiento?" })).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole("heading", { name: "¿Revocar tu consentimiento?" }),
+    ).toBeInTheDocument();
 
     await user.click(within(dialog).getByRole("button", { name: "Confirmar revocación" }));
 
@@ -466,7 +501,13 @@ describe("FamilyWorkspacePage consent revocation", () => {
   it("leaves the Consent untouched when the Persona cancels the confirmation", async () => {
     setPersonaId("p1");
     const members = [
-      memberRecord({ personaId: "p1", username: "ana", dni: "12345678Z", admin: true, consentInForce: true }),
+      memberRecord({
+        personaId: "p1",
+        username: "ana",
+        dni: "12345678Z",
+        admin: true,
+        consentInForce: true,
+      }),
     ];
     const fetchMock = statefulWorkspace(members);
     vi.stubGlobal("fetch", fetchMock);
@@ -485,7 +526,13 @@ describe("FamilyWorkspacePage consent revocation", () => {
 
 describe("FamilyWorkspacePage member removal", () => {
   const members = () => [
-    memberRecord({ personaId: "p1", username: "ana", dni: "12345678Z", admin: true, consentInForce: true }),
+    memberRecord({
+      personaId: "p1",
+      username: "ana",
+      dni: "12345678Z",
+      admin: true,
+      consentInForce: true,
+    }),
     memberRecord({ personaId: "p3", username: "carla", consentInForce: true }),
   ];
 
@@ -509,7 +556,9 @@ describe("FamilyWorkspacePage member removal", () => {
         "http://localhost:8070/api/v1/families/f1/members/p3",
       );
     });
-    await waitFor(() => expect(screen.queryByRole("rowheader", { name: /carla/ })).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByRole("rowheader", { name: /carla/ })).not.toBeInTheDocument(),
+    );
   });
 
   it("offers the Admin no way to remove its own row", async () => {
@@ -548,7 +597,11 @@ describe("FamilyWorkspacePage member removal", () => {
   it("explains a forbidden refusal with a different message", async () => {
     setPersonaId("p1");
     const fetchMock = statefulWorkspace(members(), () =>
-      jsonResponse({ title: "Forbidden", status: 403, code: "forbidden" }, 403, "application/problem+json"),
+      jsonResponse(
+        { title: "Forbidden", status: 403, code: "forbidden" },
+        403,
+        "application/problem+json",
+      ),
     );
     vi.stubGlobal("fetch", fetchMock);
     renderWorkspace();
@@ -604,7 +657,9 @@ describe("FamilyWorkspacePage member removal", () => {
 
     await user.click(rowFor(/ana/).getByRole("button", { name: "Revocar consentimiento" }));
     await user.click(
-      within(await screen.findByRole("dialog")).getByRole("button", { name: "Confirmar revocación" }),
+      within(await screen.findByRole("dialog")).getByRole("button", {
+        name: "Confirmar revocación",
+      }),
     );
 
     await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
@@ -693,7 +748,11 @@ describe("FamilyWorkspacePage DNI photos", () => {
   });
 
   it("shows the number and 'Sin fotos del DNI' without requesting any photo", async () => {
-    const fetchMock = workspaceWithDni({ number: "12345678Z", frontPhotoUrl: null, backPhotoUrl: null });
+    const fetchMock = workspaceWithDni({
+      number: "12345678Z",
+      frontPhotoUrl: null,
+      backPhotoUrl: null,
+    });
     vi.stubGlobal("fetch", fetchMock);
     renderWorkspace();
     await openDni();
@@ -715,8 +774,12 @@ describe("FamilyWorkspacePage DNI photos", () => {
     renderWorkspace();
     await openDni();
 
-    expect(await screen.findByRole("img", { name: "Foto delantera del DNI de ana" })).toBeInTheDocument();
-    expect(screen.queryByRole("img", { name: "Foto trasera del DNI de ana" })).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole("img", { name: "Foto delantera del DNI de ana" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("img", { name: "Foto trasera del DNI de ana" }),
+    ).not.toBeInTheDocument();
     expect(photoCalls(fetchMock)).toHaveLength(1);
     expect(String(photoCalls(fetchMock)[0][0])).toContain("/dni/front");
   });

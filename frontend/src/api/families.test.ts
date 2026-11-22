@@ -11,9 +11,9 @@ afterEach(() => {
 describe("getFamily", () => {
   it("reads one family with the bearer token so the workspace can compare its admin", async () => {
     setToken("token-1");
-    const fetchMock = vi.fn().mockResolvedValue(
-      jsonResponse({ id: "f1", name: "Rojas", adminPersonaId: "p1" }),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ id: "f1", name: "Rojas", adminPersonaId: "p1" }));
     vi.stubGlobal("fetch", fetchMock);
 
     const family = await getFamily("f1");
@@ -65,9 +65,11 @@ describe("listMyFamilies", () => {
 describe("createFamily", () => {
   it("posts the name with the bearer token and returns the created family", async () => {
     setToken("token-1");
-    const fetchMock = vi.fn().mockResolvedValue(
-      jsonResponse({ id: "f3", name: "Nueva familia", adminPersonaId: "p1" }, 201),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        jsonResponse({ id: "f3", name: "Nueva familia", adminPersonaId: "p1" }, 201),
+      );
     vi.stubGlobal("fetch", fetchMock);
 
     const family = await createFamily("Nueva familia");

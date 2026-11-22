@@ -11,6 +11,8 @@ import albertmnz07.demo.family.error.PhotoTooLargeException;
 import albertmnz07.demo.family.error.UnauthorizedException;
 import albertmnz07.demo.family.error.UnsupportedPhotoTypeException;
 import jakarta.validation.ConstraintViolationException;
+import java.util.List;
+import java.util.Map;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -21,8 +23,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
-import java.util.List;
-import java.util.Map;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
@@ -69,63 +69,101 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(UnsupportedPhotoTypeException.class)
     public ProblemDetail unsupportedPhotoType(UnsupportedPhotoTypeException ex) {
-        return problem(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Unsupported media type", ex.getMessage(),
+        return problem(
+                HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+                "Unsupported media type",
+                ex.getMessage(),
                 "unsupported-photo-type");
     }
 
     @ExceptionHandler(PhotoTooLargeException.class)
     public ProblemDetail photoTooLarge(PhotoTooLargeException ex) {
-        return problem(HttpStatus.PAYLOAD_TOO_LARGE, "Payload too large", ex.getMessage(),
+        return problem(
+                HttpStatus.PAYLOAD_TOO_LARGE,
+                "Payload too large",
+                ex.getMessage(),
                 "photo-too-large");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail invalidBody(MethodArgumentNotValidException ex) {
-        List<Map<String, String>> errors = ex.getBindingResult().getFieldErrors().stream()
-                .map(error -> Map.of(
-                        "field", error.getField(),
-                        "message", error.getDefaultMessage() == null ? "invalid" : error.getDefaultMessage()))
-                .toList();
-        ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, "Validation failed",
-                "One or more fields are invalid", "validation-failed");
+        List<Map<String, String>> errors =
+                ex.getBindingResult().getFieldErrors().stream()
+                        .map(error ->
+                                Map.of(
+                                        "field",
+                                        error.getField(),
+                                        "message",
+                                        error.getDefaultMessage() == null
+                                                ? "invalid"
+                                                : error.getDefaultMessage()))
+                        .toList();
+        ProblemDetail problem =
+                problem(
+                        HttpStatus.BAD_REQUEST,
+                        "Validation failed",
+                        "One or more fields are invalid",
+                        "validation-failed");
         problem.setProperty("errors", errors);
         return problem;
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
     public ProblemDetail invalidParameter(ConstraintViolationException ex) {
-        List<Map<String, String>> errors = ex.getConstraintViolations().stream()
-                .map(violation -> Map.of(
-                        "field", violation.getPropertyPath().toString(),
-                        "message", violation.getMessage()))
-                .toList();
-        ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, "Validation failed",
-                "One or more parameters are invalid", "validation-failed");
+        List<Map<String, String>> errors =
+                ex.getConstraintViolations().stream()
+                        .map(violation ->
+                                Map.of(
+                                        "field", violation.getPropertyPath().toString(),
+                                        "message", violation.getMessage()))
+                        .toList();
+        ProblemDetail problem =
+                problem(
+                        HttpStatus.BAD_REQUEST,
+                        "Validation failed",
+                        "One or more parameters are invalid",
+                        "validation-failed");
         problem.setProperty("errors", errors);
         return problem;
     }
 
     @ExceptionHandler(HandlerMethodValidationException.class)
     public ProblemDetail invalidParameter(HandlerMethodValidationException ex) {
-        List<Map<String, String>> errors = ex.getAllErrors().stream()
-                .map(error -> Map.of(
-                        "field", fieldOf(error),
-                        "message", error.getDefaultMessage() == null ? "invalid" : error.getDefaultMessage()))
-                .toList();
-        ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, "Validation failed",
-                "One or more parameters are invalid", "validation-failed");
+        List<Map<String, String>> errors =
+                ex.getAllErrors().stream()
+                        .map(error ->
+                                Map.of(
+                                        "field",
+                                        fieldOf(error),
+                                        "message",
+                                        error.getDefaultMessage() == null
+                                                ? "invalid"
+                                                : error.getDefaultMessage()))
+                        .toList();
+        ProblemDetail problem =
+                problem(
+                        HttpStatus.BAD_REQUEST,
+                        "Validation failed",
+                        "One or more parameters are invalid",
+                        "validation-failed");
         problem.setProperty("errors", errors);
         return problem;
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ProblemDetail uploadTooLarge(MaxUploadSizeExceededException ex) {
-        return problem(HttpStatus.PAYLOAD_TOO_LARGE, "Payload too large",
-                "Each DNI photo must be at most 10 MB", "photo-too-large");
+        return problem(
+                HttpStatus.PAYLOAD_TOO_LARGE,
+                "Payload too large",
+                "Each DNI photo must be at most 10 MB",
+                "photo-too-large");
     }
 
-    @ExceptionHandler({MissingServletRequestPartException.class, HttpMessageNotReadableException.class,
-            IllegalArgumentException.class})
+    @ExceptionHandler({
+        MissingServletRequestPartException.class,
+        HttpMessageNotReadableException.class,
+        IllegalArgumentException.class
+    })
     public ProblemDetail badRequest(Exception ex) {
         return problem(HttpStatus.BAD_REQUEST, "Bad request", ex.getMessage(), "bad-request");
     }

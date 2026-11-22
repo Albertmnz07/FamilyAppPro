@@ -37,7 +37,9 @@ describe("InviteRedemptionPage", () => {
   it("normalizes a pasted code, redeems it in one request and offers the joined Family", async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValue(jsonResponse({ familyId: "f1", personaId: "p1", status: "ACCEPTED" }, 201));
+      .mockResolvedValue(
+        jsonResponse({ familyId: "f1", personaId: "p1", status: "ACCEPTED" }, 201),
+      );
     vi.stubGlobal("fetch", fetchMock);
     renderRedemption("/invites/%20ab12cd%20");
 
@@ -45,7 +47,10 @@ describe("InviteRedemptionPage", () => {
 
     const workspace = screen.getByRole("link", { name: "Abrir la familia" });
     expect(workspace).toHaveAttribute("href", "/families/f1");
-    expect(screen.getByRole("link", { name: "Ver mis familias" })).toHaveAttribute("href", "/families");
+    expect(screen.getByRole("link", { name: "Ver mis familias" })).toHaveAttribute(
+      "href",
+      "/families",
+    );
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0];
@@ -61,9 +66,11 @@ describe("InviteRedemptionPage", () => {
   ])("explains the %s failure with its own Spanish message", async (code, message) => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(
-        jsonResponse({ title: "Problem", status: 409, code }, 409, "application/problem+json"),
-      ),
+      vi
+        .fn()
+        .mockResolvedValue(
+          jsonResponse({ title: "Problem", status: 409, code }, 409, "application/problem+json"),
+        ),
     );
     renderRedemption("/invites/AB12CD");
 
@@ -75,7 +82,9 @@ describe("InviteRedemptionPage", () => {
     let fail = true;
     const fetchMock = vi.fn().mockImplementation(() => {
       if (fail) return Promise.reject(new TypeError("Failed to fetch"));
-      return Promise.resolve(jsonResponse({ familyId: "f1", personaId: "p1", status: "ACCEPTED" }, 201));
+      return Promise.resolve(
+        jsonResponse({ familyId: "f1", personaId: "p1", status: "ACCEPTED" }, 201),
+      );
     });
     vi.stubGlobal("fetch", fetchMock);
     renderRedemption("/invites/AB12CD");
@@ -95,9 +104,9 @@ describe("InviteRedemptionPage", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse({ unexpected: true }, 201)));
     renderRedemption("/invites/AB12CD");
 
-    expect(
-      await screen.findByRole("alert"),
-    ).toHaveTextContent("La respuesta del servidor no es válida. Inténtalo de nuevo.");
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "La respuesta del servidor no es válida. Inténtalo de nuevo.",
+    );
   });
 
   it("explains a link that carries no code without asking the server", async () => {

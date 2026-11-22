@@ -90,7 +90,9 @@ describe("LoginPage", () => {
   });
 
   it("explains wrong credentials in Spanish and focuses the message", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(unauthorizedBody, 401, "application/problem+json"));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse(unauthorizedBody, 401, "application/problem+json"));
     vi.stubGlobal("fetch", fetchMock);
     const user = userEvent.setup();
     const { currentPath } = renderLogin();
@@ -155,7 +157,9 @@ describe("LoginPage", () => {
 
     await fillCredentials(user);
 
-    expect(await screen.findByText("No se pudo conectar con el servidor. Inténtalo de nuevo.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("No se pudo conectar con el servidor. Inténtalo de nuevo."),
+    ).toBeInTheDocument();
   });
 
   it("shows the session-expired notice carried in the router state", () => {

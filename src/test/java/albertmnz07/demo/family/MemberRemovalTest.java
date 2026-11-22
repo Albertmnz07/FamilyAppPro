@@ -1,22 +1,20 @@
 package albertmnz07.demo.family;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-
 @DataJpaTest
 @Import({FamilyService.class, InviteCodeGenerator.class})
 class MemberRemovalTest {
 
-    @Autowired
-    FamilyService familyService;
+    @Autowired FamilyService familyService;
 
-    @Autowired
-    PersonaRepository personaRepository;
+    @Autowired PersonaRepository personaRepository;
 
     @Test
     void removingAMemberDropsTheirVisibility() {
@@ -74,7 +72,12 @@ class MemberRemovalTest {
     }
 
     private Persona savePersona(String dni) {
-        return personaRepository.save(new Persona("user-" + dni.toLowerCase(java.util.Locale.ROOT), dni, "front-key", "back-key"));
+        return personaRepository.save(
+                new Persona(
+                        "user-" + dni.toLowerCase(java.util.Locale.ROOT),
+                        dni,
+                        "front-key",
+                        "back-key"));
     }
 
     private void redeemInto(Family family, Persona persona) {

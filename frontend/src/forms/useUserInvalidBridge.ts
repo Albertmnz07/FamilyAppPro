@@ -17,7 +17,9 @@ type Field = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
  * in jsdom, which never matches that selector. The ref may point at a whole
  * page section to cover several forms with that one live region.
  */
-export function useUserInvalidBridge<T extends HTMLElement = HTMLElement>(): React.RefObject<T | null> {
+export function useUserInvalidBridge<
+  T extends HTMLElement = HTMLElement,
+>(): React.RefObject<T | null> {
   const rootRef = useRef<T | null>(null);
 
   useEffect(() => {
@@ -41,9 +43,9 @@ export function useUserInvalidBridge<T extends HTMLElement = HTMLElement>(): Rea
     const spokenText = (node: Element): string => {
       const copy = node.cloneNode(true) as Element;
       copy.querySelectorAll('[aria-hidden="true"]').forEach((hidden) => hidden.remove());
-      copy.querySelectorAll('[role="img"][aria-label]').forEach((image) =>
-        image.replaceWith(`${image.getAttribute("aria-label")}: `),
-      );
+      copy
+        .querySelectorAll('[role="img"][aria-label]')
+        .forEach((image) => image.replaceWith(`${image.getAttribute("aria-label")}: `));
       return (copy.textContent ?? "").replace(/\s+/g, " ").trim();
     };
 

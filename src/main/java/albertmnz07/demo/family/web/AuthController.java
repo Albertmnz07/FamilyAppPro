@@ -23,6 +23,7 @@ public class AuthController {
     @PostMapping("/login")
     public LoginResponse login(@Valid @RequestBody LoginRequest request) {
         AuthToken token = auth.login(request.username(), request.password());
-        return new LoginResponse(token.getToken(), token.getPersona().getId(), token.getPersona().getUsername());
+        return new LoginResponse(
+                token.getToken(), token.getPersona().getId(), token.getPersona().getUsername());
     }
 }

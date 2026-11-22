@@ -46,7 +46,9 @@ function profileFetch(putResponse?: () => Response) {
 function stubCamera(getUserMedia: ReturnType<typeof vi.fn>) {
   Object.defineProperty(navigator, "mediaDevices", { configurable: true, value: { getUserMedia } });
   vi.spyOn(window.HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
-  HTMLCanvasElement.prototype.getContext = vi.fn(() => ({ drawImage: vi.fn() })) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
+    drawImage: vi.fn(),
+  })) as unknown as typeof HTMLCanvasElement.prototype.getContext;
   HTMLCanvasElement.prototype.toBlob = vi.fn((callback: BlobCallback) =>
     callback(new Blob(["frame"], { type: "image/jpeg" })),
   ) as unknown as typeof HTMLCanvasElement.prototype.toBlob;
@@ -65,7 +67,10 @@ function putCall(fetchMock: ReturnType<typeof vi.fn>) {
 
 beforeEach(() => {
   setToken("token-1");
-  Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => "blob:capture") });
+  Object.defineProperty(URL, "createObjectURL", {
+    configurable: true,
+    value: vi.fn(() => "blob:capture"),
+  });
   Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
 });
 

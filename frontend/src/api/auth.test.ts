@@ -10,7 +10,9 @@ afterEach(() => {
 
 describe("login", () => {
   it("posts the credentials to /auth/login without a bearer token", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ token: "t", personaId: "p", username: "ana" }));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ token: "t", personaId: "p", username: "ana" }));
     vi.stubGlobal("fetch", fetchMock);
 
     const response = await login({ username: "ana", password: "secret" });

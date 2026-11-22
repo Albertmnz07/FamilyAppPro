@@ -35,20 +35,31 @@ public class Persona {
     @Column(name = "back_photo_content_type")
     private String backPhotoContentType;
 
-    protected Persona() {
-    }
+    protected Persona() {}
 
     public Persona(String username, String dni, String passwordHash) {
         this(username, dni, null, null, null, null, passwordHash);
     }
 
     public Persona(String username, String dni, String frontPhotoKey, String backPhotoKey) {
-        this(username, dni, frontPhotoKey, frontPhotoKey == null ? null : "image/jpeg",
-                backPhotoKey, backPhotoKey == null ? null : "image/jpeg", null);
+        this(
+                username,
+                dni,
+                frontPhotoKey,
+                frontPhotoKey == null ? null : "image/jpeg",
+                backPhotoKey,
+                backPhotoKey == null ? null : "image/jpeg",
+                null);
     }
 
-    public Persona(String username, String dni, String frontPhotoKey, String frontPhotoContentType,
-            String backPhotoKey, String backPhotoContentType, String passwordHash) {
+    public Persona(
+            String username,
+            String dni,
+            String frontPhotoKey,
+            String frontPhotoContentType,
+            String backPhotoKey,
+            String backPhotoContentType,
+            String passwordHash) {
         this.username = username;
         this.dni = dni;
         this.frontPhotoKey = frontPhotoKey;
@@ -99,7 +110,8 @@ public class Persona {
     }
 
     public Dni dniEntity() {
-        return new Dni(dni, frontPhotoKey, frontPhotoContentType, backPhotoKey, backPhotoContentType);
+        return new Dni(
+                dni, frontPhotoKey, frontPhotoContentType, backPhotoKey, backPhotoContentType);
     }
 
     public void changeFrontPhoto(String key, String contentType) {

@@ -27,8 +27,7 @@ public class Invite {
 
     private Instant redeemedAt;
 
-    protected Invite() {
-    }
+    protected Invite() {}
 
     public Invite(String code, Family family, Instant expiresAt) {
         this.code = code;

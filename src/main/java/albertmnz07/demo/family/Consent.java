@@ -12,9 +12,11 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(uniqueConstraints = @UniqueConstraint(
-        name = "uk_consent_family_persona",
-        columnNames = {"family_id", "persona_id"}))
+@Table(
+        uniqueConstraints =
+                @UniqueConstraint(
+                        name = "uk_consent_family_persona",
+                        columnNames = {"family_id", "persona_id"}))
 public class Consent {
 
     @Id
@@ -32,8 +34,7 @@ public class Consent {
 
     private Instant revokedAt;
 
-    protected Consent() {
-    }
+    protected Consent() {}
 
     public Consent(Family family, Persona persona, Instant grantedAt) {
         this.family = family;

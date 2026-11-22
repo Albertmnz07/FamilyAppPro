@@ -19,8 +19,7 @@ public class Family {
     @ManyToOne(optional = false)
     private Persona admin;
 
-    protected Family() {
-    }
+    protected Family() {}
 
     public Family(String name, Persona admin) {
         this.name = name;

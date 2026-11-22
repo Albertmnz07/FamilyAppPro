@@ -8,11 +8,11 @@ import albertmnz07.demo.family.error.PhotoTooLargeException;
 import albertmnz07.demo.family.error.UnsupportedPhotoTypeException;
 import albertmnz07.demo.family.photo.PhotoStore;
 import albertmnz07.demo.family.photo.PhotoUpload;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PersonaService {
@@ -52,9 +52,9 @@ public class PersonaService {
     }
 
     /**
-     * Uploads or replaces the acting Persona's optional DNI photos. Each side is
-     * independent: an absent side is left as it was. Both sides are validated
-     * before either is stored, so a rejected side leaves the other untouched.
+     * Uploads or replaces the acting Persona's optional DNI photos. Each side is independent: an
+     * absent side is left as it was. Both sides are validated before either is stored, so a
+     * rejected side leaves the other untouched.
      */
     @Transactional
     public Persona updateDniPhotos(Persona persona, PhotoUpload front, PhotoUpload back) {
@@ -87,7 +87,9 @@ public class PersonaService {
     }
 
     private void validatePassword(String password) {
-        if (password == null || password.length() < MIN_PASSWORD_LENGTH || password.length() > MAX_PASSWORD_LENGTH) {
+        if (password == null
+                || password.length() < MIN_PASSWORD_LENGTH
+                || password.length() > MAX_PASSWORD_LENGTH) {
             throw new IllegalArgumentException("The password must be 3-100 characters");
         }
     }
@@ -99,7 +101,8 @@ public class PersonaService {
         if (photo.length > MAX_PHOTO_BYTES) {
             throw new PhotoTooLargeException("The " + side + " photo exceeds 10 MB");
         }
-        if (contentType == null || !ALLOWED_PHOTO_TYPES.contains(contentType.toLowerCase(Locale.ROOT))) {
+        if (contentType == null
+                || !ALLOWED_PHOTO_TYPES.contains(contentType.toLowerCase(Locale.ROOT))) {
             throw new UnsupportedPhotoTypeException(
                     "The " + side + " photo must be image/jpeg or image/png");
         }

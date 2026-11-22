@@ -13,9 +13,11 @@ import jakarta.persistence.UniqueConstraint;
 import java.util.UUID;
 
 @Entity
-@Table(uniqueConstraints = @UniqueConstraint(
-        name = "uk_membership_family_persona",
-        columnNames = {"family_id", "persona_id"}))
+@Table(
+        uniqueConstraints =
+                @UniqueConstraint(
+                        name = "uk_membership_family_persona",
+                        columnNames = {"family_id", "persona_id"}))
 public class Membership {
 
     public enum Status {
@@ -37,8 +39,7 @@ public class Membership {
     @Column(nullable = false)
     private Status status;
 
-    protected Membership() {
-    }
+    protected Membership() {}
 
     public Membership(Family family, Persona persona) {
         this.family = family;

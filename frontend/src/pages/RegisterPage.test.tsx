@@ -171,14 +171,18 @@ describe("RegisterPage", () => {
     await fillValidForm(user);
     submitRegisterForm();
 
-    expect(await screen.findByText("Ya existe una persona registrada con ese DNI.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Ya existe una persona registrada con ese DNI."),
+    ).toBeInTheDocument();
     await waitFor(() => expect(screen.getByLabelText("DNI")).toHaveFocus());
   });
 
   it("maps a validation-failed field error onto the offending input", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(jsonResponse(validationFailedBody, 400, "application/problem+json")),
+      vi
+        .fn()
+        .mockResolvedValue(jsonResponse(validationFailedBody, 400, "application/problem+json")),
     );
     const user = userEvent.setup();
     renderRegister();
@@ -273,7 +277,9 @@ describe("RegisterPage", () => {
     await fillValidForm(user);
     submitRegisterForm();
 
-    expect(await screen.findByText("No se pudo conectar con el servidor. Inténtalo de nuevo.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("No se pudo conectar con el servidor. Inténtalo de nuevo."),
+    ).toBeInTheDocument();
   });
 
   it("offers a way back to the login screen and navigates to /login", async () => {

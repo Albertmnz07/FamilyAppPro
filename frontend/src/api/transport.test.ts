@@ -15,7 +15,11 @@ describe("request", () => {
     vi.stubGlobal("fetch", fetchMock);
     setToken("token-123");
 
-    const result = await request<{ id: string }>({ method: "GET", path: "/personas/me", authorized: true });
+    const result = await request<{ id: string }>({
+      method: "GET",
+      path: "/personas/me",
+      authorized: true,
+    });
 
     expect(result).toEqual({ id: "abc" });
     const [url, init] = fetchMock.mock.calls[0];
@@ -28,7 +32,12 @@ describe("request", () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ token: "t" }));
     vi.stubGlobal("fetch", fetchMock);
 
-    await request({ method: "POST", path: "/auth/login", body: { username: "ana", password: "secret" }, authorized: false });
+    await request({
+      method: "POST",
+      path: "/auth/login",
+      body: { username: "ana", password: "secret" },
+      authorized: false,
+    });
 
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe("http://localhost:8070/api/v1/auth/login");
@@ -52,7 +61,12 @@ describe("request", () => {
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ content: [] }));
     vi.stubGlobal("fetch", fetchMock);
 
-    await request({ method: "GET", path: "/me/families", query: { page: 1, size: 20 }, authorized: true });
+    await request({
+      method: "GET",
+      path: "/me/families",
+      query: { page: 1, size: 20 },
+      authorized: true,
+    });
 
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe("http://localhost:8070/api/v1/me/families?page=1&size=20");

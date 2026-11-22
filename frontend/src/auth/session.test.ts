@@ -14,7 +14,9 @@ describe("handleUnauthorizedResponse", () => {
     const handler = vi.fn();
     const unregister = onUnauthorized(handler);
 
-    handleUnauthorizedResponse(new ApiError(401, fromPartial<ProblemDetail>({ code: "unauthorized" })));
+    handleUnauthorizedResponse(
+      new ApiError(401, fromPartial<ProblemDetail>({ code: "unauthorized" })),
+    );
 
     expect(handler).toHaveBeenCalledOnce();
     expect(getToken()).toBeNull();
@@ -25,7 +27,9 @@ describe("handleUnauthorizedResponse", () => {
     const handler = vi.fn();
     const unregister = onUnauthorized(handler);
 
-    handleUnauthorizedResponse(new ApiError(401, fromPartial<ProblemDetail>({ code: "unauthorized" })));
+    handleUnauthorizedResponse(
+      new ApiError(401, fromPartial<ProblemDetail>({ code: "unauthorized" })),
+    );
 
     expect(handler).not.toHaveBeenCalled();
     unregister();
@@ -36,7 +40,9 @@ describe("handleUnauthorizedResponse", () => {
     const handler = vi.fn();
     const unregister = onUnauthorized(handler);
 
-    handleUnauthorizedResponse(new ApiError(409, fromPartial<ProblemDetail>({ code: "cannot-remove-admin" })));
+    handleUnauthorizedResponse(
+      new ApiError(409, fromPartial<ProblemDetail>({ code: "cannot-remove-admin" })),
+    );
     handleUnauthorizedResponse(new TypeError("Failed to fetch"));
 
     expect(handler).not.toHaveBeenCalled();
@@ -50,7 +56,9 @@ describe("handleUnauthorizedResponse", () => {
     const unregister = onUnauthorized(handler);
     unregister();
 
-    handleUnauthorizedResponse(new ApiError(401, fromPartial<ProblemDetail>({ code: "unauthorized" })));
+    handleUnauthorizedResponse(
+      new ApiError(401, fromPartial<ProblemDetail>({ code: "unauthorized" })),
+    );
 
     expect(handler).not.toHaveBeenCalled();
     expect(getToken()).toBeNull();

@@ -67,7 +67,8 @@ export async function request<T>(options: RequestInit): Promise<T> {
     if (token) headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const body = options.form ?? (options.body === undefined ? undefined : JSON.stringify(options.body));
+  const body =
+    options.form ?? (options.body === undefined ? undefined : JSON.stringify(options.body));
   const response = await fetch(buildUrl(options.path, options.query), {
     method: options.method,
     headers,

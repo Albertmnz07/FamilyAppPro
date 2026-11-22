@@ -1,24 +1,23 @@
 package albertmnz07.demo.family.photo;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import java.nio.file.Path;
-
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.file.Path;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
 class LocalFilePhotoStoreTest {
 
-    @TempDir
-    Path storageDir;
+    @TempDir Path storageDir;
 
     @Test
     void putReturnsAKeyWhoseContentCanBeReadBack() throws Exception {
         LocalFilePhotoStore store = new LocalFilePhotoStore(storageDir.toString());
 
-        String key = store.put(new byte[]{1, 2, 3});
+        String key = store.put(new byte[] {1, 2, 3});
 
-        assertArrayEquals(new byte[]{1, 2, 3}, store.get(key).orElseThrow());
+        assertArrayEquals(new byte[] {1, 2, 3}, store.get(key).orElseThrow());
     }
 
     @Test

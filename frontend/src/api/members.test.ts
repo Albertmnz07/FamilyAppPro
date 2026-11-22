@@ -1,7 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { clearToken, setToken } from "../auth/token";
 import { jsonResponse } from "../test/http";
-import { getDniPhoto, getMemberDni, InvalidDniError, listFamilyMembers, removeMember, revokeConsent } from "./members";
+import {
+  getDniPhoto,
+  getMemberDni,
+  InvalidDniError,
+  listFamilyMembers,
+  removeMember,
+  revokeConsent,
+} from "./members";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -98,7 +105,12 @@ describe("getMemberDni", () => {
   it("reads null photo URLs when the Persona has uploaded no photos", async () => {
     setToken("token-1");
     const fetchMock = vi.fn().mockResolvedValue(
-      jsonResponse({ personaId: "p1", number: "12345678Z", frontPhotoUrl: null, backPhotoUrl: null }),
+      jsonResponse({
+        personaId: "p1",
+        number: "12345678Z",
+        frontPhotoUrl: null,
+        backPhotoUrl: null,
+      }),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -110,7 +122,12 @@ describe("getMemberDni", () => {
   it("rejects a DNI response whose photo URL is not a string", async () => {
     setToken("token-1");
     const fetchMock = vi.fn().mockResolvedValue(
-      jsonResponse({ personaId: "p1", number: "12345678Z", frontPhotoUrl: 42, backPhotoUrl: null }),
+      jsonResponse({
+        personaId: "p1",
+        number: "12345678Z",
+        frontPhotoUrl: 42,
+        backPhotoUrl: null,
+      }),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -151,9 +168,9 @@ describe("removeMember", () => {
 describe("getDniPhoto", () => {
   it("requests the DTO's relative photo URL against the API origin with the bearer token", async () => {
     setToken("token-1");
-    const fetchMock = vi.fn().mockResolvedValue(
-      new Response(new Blob(["photo"], { type: "image/png" }), { status: 200 }),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(new Blob(["photo"], { type: "image/png" }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
     const photo = await getDniPhoto("/api/v1/families/f1/members/p1/dni/front");

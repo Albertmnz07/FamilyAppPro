@@ -11,7 +11,9 @@ const nameConstraintMessage = "Escribe un nombre de hasta 100 caracteres.";
 /** A server-side validation failure on `name` must mark that input, not just the page. */
 function rejectsName(error: unknown): boolean {
   if (!isApiError(error)) return false;
-  return normalizeFieldErrors(error.problem?.errors ?? []).fieldErrors.some(({ field }) => field === "name");
+  return normalizeFieldErrors(error.problem?.errors ?? []).fieldErrors.some(
+    ({ field }) => field === "name",
+  );
 }
 
 export function FamiliesPage() {
@@ -101,7 +103,11 @@ export function FamiliesPage() {
                 Crear una familia
               </button>
               <h2 id="redeem-invite-heading">Canjear una invitación</h2>
-              <form onSubmit={handleRedeem} className="redeem-form" aria-labelledby="redeem-invite-heading">
+              <form
+                onSubmit={handleRedeem}
+                className="redeem-form"
+                aria-labelledby="redeem-invite-heading"
+              >
                 <div className="field">
                   <label htmlFor="invite-code">Código de invitación</label>
                   <input
