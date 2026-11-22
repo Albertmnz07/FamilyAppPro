@@ -62,7 +62,9 @@ describe("messageForProblem", () => {
   });
 
   it("falls back to a generic Spanish message for unknown codes", () => {
-    expect(messageForProblem(fromPartial<ProblemDetail>({ code: "something-new" }))).toBe(fallbackMessage);
+    expect(messageForProblem(fromPartial<ProblemDetail>({ code: "something-new" }))).toBe(
+      fallbackMessage,
+    );
     expect(messageForProblem({})).toBe(fallbackMessage);
   });
 
@@ -73,15 +75,21 @@ describe("messageForProblem", () => {
 
 describe("messageForFailure", () => {
   it("reads the problem code for API failures, including the login context", () => {
-    expect(messageForFailure(new ApiError(401, { code: "unauthorized" }), "login")).toBe(loginFailedMessage);
+    expect(messageForFailure(new ApiError(401, { code: "unauthorized" }), "login")).toBe(
+      loginFailedMessage,
+    );
     expect(messageForFailure(new ApiError(403, { code: "forbidden" }))).toBe(
       "No tienes permiso para hacer eso.",
     );
   });
 
   it("does not blame the network for a malformed successful response", () => {
-    expect(messageForFailure(new InvalidPageError("no content array"))).toBe(unexpectedResponseMessage);
-    expect(messageForFailure(new InvalidPersonaError("bad profile"))).toBe(unexpectedResponseMessage);
+    expect(messageForFailure(new InvalidPageError("no content array"))).toBe(
+      unexpectedResponseMessage,
+    );
+    expect(messageForFailure(new InvalidPersonaError("bad profile"))).toBe(
+      unexpectedResponseMessage,
+    );
     expect(messageForFailure(new InvalidRedemptionError("bad redemption"))).toBe(
       unexpectedResponseMessage,
     );

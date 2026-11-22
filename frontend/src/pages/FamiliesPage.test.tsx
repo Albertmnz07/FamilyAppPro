@@ -69,7 +69,10 @@ describe("FamiliesPage", () => {
 
     const rojas = await screen.findByRole("link", { name: "Rojas" });
     expect(rojas).toHaveAttribute("href", "/families/f1");
-    expect(screen.getByRole("link", { name: "Sin nombre" })).toHaveAttribute("href", "/families/f2");
+    expect(screen.getByRole("link", { name: "Sin nombre" })).toHaveAttribute(
+      "href",
+      "/families/f2",
+    );
     expect(screen.queryByText("Cargando familias…")).not.toBeInTheDocument();
 
     await userEvent.setup().click(rojas);
@@ -80,7 +83,11 @@ describe("FamiliesPage", () => {
   it("offers creating a family or redeeming an invite when there are none", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(jsonResponse({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 20 })),
+      vi
+        .fn()
+        .mockResolvedValue(
+          jsonResponse({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 20 }),
+        ),
     );
     renderFamilies();
 
@@ -95,7 +102,11 @@ describe("FamiliesPage", () => {
   it("normalizes a pasted invite code and opens its redemption route", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(jsonResponse({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 20 })),
+      vi
+        .fn()
+        .mockResolvedValue(
+          jsonResponse({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 20 }),
+        ),
     );
     const { currentPath } = renderFamilies();
     const user = userEvent.setup();
@@ -131,7 +142,9 @@ describe("FamiliesPage", () => {
     await user.click(screen.getByRole("button", { name: "Siguiente" }));
     expect(await screen.findByText("Página 2 de 3")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Familia 1" })).toBeInTheDocument();
-    expect(fetchMock.mock.calls[1][0]).toBe("http://localhost:8070/api/v1/me/families?page=1&size=20");
+    expect(fetchMock.mock.calls[1][0]).toBe(
+      "http://localhost:8070/api/v1/me/families?page=1&size=20",
+    );
 
     await user.click(screen.getByRole("button", { name: "Siguiente" }));
     expect(await screen.findByText("Página 3 de 3")).toBeInTheDocument();
@@ -147,19 +160,29 @@ describe("FamiliesPage", () => {
     const fetchMock = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
       if (init?.method === "POST") {
         created = true;
-        return Promise.resolve(jsonResponse({ id: "f3", name: "Nueva familia", adminPersonaId: "p1" }, 201));
+        return Promise.resolve(
+          jsonResponse({ id: "f3", name: "Nueva familia", adminPersonaId: "p1" }, 201),
+        );
       }
       const content = [{ id: "f1", name: "Rojas", adminPersonaId: "p1" }];
       if (created) content.push({ id: "f3", name: "Nueva familia", adminPersonaId: "p1" });
       return Promise.resolve(
-        jsonResponse({ content, totalElements: content.length, totalPages: 1, number: 0, size: 20 }),
+        jsonResponse({
+          content,
+          totalElements: content.length,
+          totalPages: 1,
+          number: 0,
+          size: 20,
+        }),
       );
     });
     vi.stubGlobal("fetch", fetchMock);
     const user = userEvent.setup();
     renderFamilies();
 
-    const name = (await screen.findByRole("textbox", { name: "Nombre de la familia" })) as HTMLInputElement;
+    const name = (await screen.findByRole("textbox", {
+      name: "Nombre de la familia",
+    })) as HTMLInputElement;
     expect(name).toBeRequired();
     expect(name).toHaveAttribute("maxlength", "100");
 
@@ -185,7 +208,9 @@ describe("FamiliesPage", () => {
     const fetchMock = vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
       if (init?.method === "POST") {
         if (created) {
-          return Promise.resolve(jsonResponse({ id: "f3", name: "Rojas", adminPersonaId: "p1" }, 201));
+          return Promise.resolve(
+            jsonResponse({ id: "f3", name: "Rojas", adminPersonaId: "p1" }, 201),
+          );
         }
         return Promise.resolve(
           jsonResponse(
@@ -202,7 +227,13 @@ describe("FamiliesPage", () => {
       }
       const content = created ? [{ id: "f3", name: "Rojas", adminPersonaId: "p1" }] : [];
       return Promise.resolve(
-        jsonResponse({ content, totalElements: content.length, totalPages: 1, number: 0, size: 20 }),
+        jsonResponse({
+          content,
+          totalElements: content.length,
+          totalPages: 1,
+          number: 0,
+          size: 20,
+        }),
       );
     });
     vi.stubGlobal("fetch", fetchMock);
@@ -232,11 +263,15 @@ describe("FamiliesPage", () => {
   it("explains a connection failure when creating a family", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockImplementation((_url: string, init?: RequestInit) =>
-        init?.method === "POST"
-          ? Promise.reject(new TypeError("Failed to fetch"))
-          : Promise.resolve(jsonResponse({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 20 })),
-      ),
+      vi
+        .fn()
+        .mockImplementation((_url: string, init?: RequestInit) =>
+          init?.method === "POST"
+            ? Promise.reject(new TypeError("Failed to fetch"))
+            : Promise.resolve(
+                jsonResponse({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 20 }),
+              ),
+        ),
     );
     const user = userEvent.setup();
     renderFamilies();
@@ -244,7 +279,9 @@ describe("FamiliesPage", () => {
     await user.type(await screen.findByLabelText("Nombre de la familia"), "Rojas");
     await user.click(screen.getByRole("button", { name: "Crear familia" }));
 
-    expect(await screen.findByText("No se pudo conectar con el servidor. Inténtalo de nuevo.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("No se pudo conectar con el servidor. Inténtalo de nuevo."),
+    ).toBeInTheDocument();
   });
 
   it("explains a malformed list response without blaming the network", async () => {
@@ -259,7 +296,11 @@ describe("FamiliesPage", () => {
   it("bridges both forms with one polite live region and marks invite errors", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue(jsonResponse({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 20 })),
+      vi
+        .fn()
+        .mockResolvedValue(
+          jsonResponse({ content: [], totalElements: 0, totalPages: 0, number: 0, size: 20 }),
+        ),
     );
     const { currentPath } = renderFamilies();
     const user = userEvent.setup();
@@ -279,7 +320,11 @@ describe("FamiliesPage", () => {
     const fetchMock = vi.fn().mockImplementation(() => {
       if (fail) {
         return Promise.resolve(
-          jsonResponse({ title: "Forbidden", status: 403, code: "forbidden" }, 403, "application/problem+json"),
+          jsonResponse(
+            { title: "Forbidden", status: 403, code: "forbidden" },
+            403,
+            "application/problem+json",
+          ),
         );
       }
       return Promise.resolve(

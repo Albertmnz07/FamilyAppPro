@@ -52,7 +52,8 @@ public final class PasswordHasher {
 
     private byte[] derive(String password, byte[] salt, int iterations) {
         try {
-            KeySpec spec = new PBEKeySpec(password.toCharArray(), salt, iterations, KEY_LENGTH_BITS);
+            KeySpec spec =
+                    new PBEKeySpec(password.toCharArray(), salt, iterations, KEY_LENGTH_BITS);
             return SecretKeyFactory.getInstance(ALGORITHM).generateSecret(spec).getEncoded();
         } catch (Exception cryptoFailure) {
             throw new IllegalStateException("Unable to hash the password", cryptoFailure);

@@ -5,12 +5,6 @@ import albertmnz07.demo.family.error.ForbiddenException;
 import albertmnz07.demo.family.error.InviteAlreadyRedeemedException;
 import albertmnz07.demo.family.error.InviteExpiredException;
 import albertmnz07.demo.family.error.NotFoundException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
@@ -18,6 +12,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class FamilyService {
@@ -32,8 +32,12 @@ public class FamilyService {
     private final ConsentRepository consents;
     private final InviteCodeGenerator codeGenerator;
 
-    public FamilyService(FamilyRepository families, InviteRepository invites, MembershipRepository memberships,
-            ConsentRepository consents, InviteCodeGenerator codeGenerator) {
+    public FamilyService(
+            FamilyRepository families,
+            InviteRepository invites,
+            MembershipRepository memberships,
+            ConsentRepository consents,
+            InviteCodeGenerator codeGenerator) {
         this.families = families;
         this.invites = invites;
         this.memberships = memberships;
@@ -55,17 +59,23 @@ public class FamilyService {
     }
 
     public Page<Family> listFamiliesFor(Persona persona, Pageable pageable) {
-        return page(memberships.findByPersonaAndStatus(persona, Membership.Status.ACCEPTED).stream()
-                .map(Membership::getFamily)
-                .sorted(Comparator.comparing(Family::getName,
-                        Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
-                .toList(), pageable);
+        return page(
+                memberships.findByPersonaAndStatus(persona, Membership.Status.ACCEPTED).stream()
+                        .map(Membership::getFamily)
+                        .sorted(
+                                Comparator.comparing(
+                                        Family::getName,
+                                        Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
+                        .toList(),
+                pageable);
     }
 
     public List<Membership> listAcceptedMembers(Family family) {
         return memberships.findByFamilyAndStatus(family, Membership.Status.ACCEPTED).stream()
-                .sorted(Comparator.comparing(membership -> membership.getPersona().getDni(),
-                        String.CASE_INSENSITIVE_ORDER))
+                .sorted(
+                        Comparator.comparing(
+                                membership -> membership.getPersona().getDni(),
+                                String.CASE_INSENSITIVE_ORDER))
                 .toList();
     }
 
@@ -76,15 +86,17 @@ public class FamilyService {
     private static <T> Page<T> page(List<T> sorted, Pageable pageable) {
         // Ordering is fixed server-side and the page size is capped, so rebind the
         // pageable (unsorted, bounded) instead of echoing the client's request.
-        Pageable bounded = PageRequest.of(pageable.getPageNumber(),
-                Math.min(pageable.getPageSize(), MAX_PAGE_SIZE));
+        Pageable bounded =
+                PageRequest.of(
+                        pageable.getPageNumber(), Math.min(pageable.getPageSize(), MAX_PAGE_SIZE));
         int start = (int) Math.min(bounded.getOffset(), sorted.size());
         int end = Math.min(start + bounded.getPageSize(), sorted.size());
         return new PageImpl<>(sorted.subList(start, end), bounded, sorted.size());
     }
 
     public boolean isAcceptedMember(Family family, Persona persona) {
-        return memberships.existsByFamilyAndPersonaAndStatus(family, persona, Membership.Status.ACCEPTED);
+        return memberships.existsByFamilyAndPersonaAndStatus(
+                family, persona, Membership.Status.ACCEPTED);
     }
 
     public boolean isConsentInForce(Family family, Persona persona) {
@@ -118,8 +130,9 @@ public class FamilyService {
 
     @Transactional
     public Membership redeemInvite(String code, Persona persona) {
-        Invite invite = invites.findByCode(normalizeCode(code))
-                .orElseThrow(() -> new NotFoundException("Invite not found: " + code));
+        Invite invite =
+                invites.findByCode(normalizeCode(code))
+                        .orElseThrow(() -> new NotFoundException("Invite not found: " + code));
         Instant now = Instant.now();
         if (invite.isExpiredAt(now)) {
             throw new InviteExpiredException("Invite has expired: " + code);
@@ -138,7 +151,8 @@ public class FamilyService {
     }
 
     private Membership inviteMembership(Family family, Persona persona) {
-        return memberships.findByFamilyAndPersona(family, persona)
+        return memberships
+                .findByFamilyAndPersona(family, persona)
                 .orElseGet(() -> memberships.save(new Membership(family, persona)));
     }
 
@@ -150,8 +164,9 @@ public class FamilyService {
     }
 
     private void grantConsent(Family family, Persona persona, Instant now) {
-        Consent consent = consents.findByFamilyAndPersona(family, persona)
-                .orElseGet(() -> new Consent(family, persona, now));
+        Consent consent =
+                consents.findByFamilyAndPersona(family, persona)
+                        .orElseGet(() -> new Consent(family, persona, now));
         consent.grant(now);
         consents.save(consent);
     }
@@ -161,7 +176,8 @@ public class FamilyService {
         if (family.getAdmin().getId().equals(persona.getId())) {
             throw new CannotRemoveAdminException("Cannot remove the family admin");
         }
-        memberships.findByFamilyAndPersona(family, persona)
+        memberships
+                .findByFamilyAndPersona(family, persona)
                 .ifPresent(membership -> {
                     membership.remove();
                     memberships.save(membership);

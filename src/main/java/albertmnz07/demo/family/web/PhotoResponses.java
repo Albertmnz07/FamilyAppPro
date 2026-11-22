@@ -6,8 +6,7 @@ import org.springframework.http.ResponseEntity;
 
 final class PhotoResponses {
 
-    private PhotoResponses() {
-    }
+    private PhotoResponses() {}
 
     static ResponseEntity<byte[]> of(byte[] photo, String contentType) {
         return ResponseEntity.ok()

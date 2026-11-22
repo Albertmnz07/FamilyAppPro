@@ -29,8 +29,11 @@ public class ActingPersonaArgumentResolver implements HandlerMethodArgumentResol
     }
 
     @Override
-    public Persona resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer,
-            NativeWebRequest webRequest, WebDataBinderFactory binderFactory) {
+    public Persona resolveArgument(
+            MethodParameter parameter,
+            ModelAndViewContainer mavContainer,
+            NativeWebRequest webRequest,
+            WebDataBinderFactory binderFactory) {
         String header = webRequest.getHeader(HEADER);
         if (header == null || header.isBlank()) {
             throw new UnauthorizedException("Missing " + HEADER + " header");

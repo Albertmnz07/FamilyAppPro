@@ -33,7 +33,10 @@ function personaIdentity(data: PersonaResponse): { id: string; username: string 
   return { id: data.id, username: data.username };
 }
 
-export async function register(input: Registration, signal?: AbortSignal): Promise<RegisteredPersona> {
+export async function register(
+  input: Registration,
+  signal?: AbortSignal,
+): Promise<RegisteredPersona> {
   const form = new FormData();
   form.set("username", input.username);
   form.set("dni", input.dni);
@@ -88,7 +91,10 @@ export type DniPhotoUpload = {
 };
 
 /** Uploads or replaces the acting Persona's optional DNI photos (multipart PUT). */
-export async function uploadDniPhotos(input: DniPhotoUpload, signal?: AbortSignal): Promise<Profile> {
+export async function uploadDniPhotos(
+  input: DniPhotoUpload,
+  signal?: AbortSignal,
+): Promise<Profile> {
   const form = new FormData();
   if (input.frontPhoto) form.set("frontPhoto", input.frontPhoto);
   if (input.backPhoto) form.set("backPhoto", input.backPhoto);

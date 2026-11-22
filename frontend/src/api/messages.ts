@@ -33,7 +33,8 @@ export function messageForProblem(problem: ProblemDetail, context?: "login"): st
   return (problem.code !== undefined && errorMessages[problem.code]) || fallbackMessage;
 }
 
-export const unexpectedResponseMessage = "La respuesta del servidor no es válida. Inténtalo de nuevo.";
+export const unexpectedResponseMessage =
+  "La respuesta del servidor no es válida. Inténtalo de nuevo.";
 
 export const dniWithoutConsentMessage =
   "Esta persona no tiene el consentimiento vigente en esta familia.";

@@ -3,12 +3,12 @@ package albertmnz07.demo.family.auth;
 import albertmnz07.demo.family.Persona;
 import albertmnz07.demo.family.PersonaRepository;
 import albertmnz07.demo.family.error.UnauthorizedException;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.UUID;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthService {
@@ -26,17 +26,21 @@ public class AuthService {
 
     @Transactional
     public AuthToken login(String rawUsername, String password) {
-        Persona persona = personas.findByUsername(normalizeUsername(rawUsername))
-                .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
+        Persona persona =
+                personas.findByUsername(normalizeUsername(rawUsername))
+                        .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
         if (!passwordHasher.matches(password, persona.getPasswordHash())) {
             throw new UnauthorizedException("Invalid credentials");
         }
-        return tokens.save(new AuthToken(UUID.randomUUID().toString(), persona, Instant.now().plus(TOKEN_TTL)));
+        return tokens.save(
+                new AuthToken(
+                        UUID.randomUUID().toString(), persona, Instant.now().plus(TOKEN_TTL)));
     }
 
     public Persona resolve(String token) {
-        AuthToken authToken = tokens.findByToken(token)
-                .orElseThrow(() -> new UnauthorizedException("Unknown token"));
+        AuthToken authToken =
+                tokens.findByToken(token)
+                        .orElseThrow(() -> new UnauthorizedException("Unknown token"));
         if (authToken.getExpiresAt().isBefore(Instant.now())) {
             throw new UnauthorizedException("Expired token");
         }

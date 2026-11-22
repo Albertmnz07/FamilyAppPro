@@ -25,7 +25,11 @@ describe("the global 401 handler wired into TanStack Query", () => {
     const handler = vi.fn();
     const unregister = onUnauthorized(handler);
     const { result } = renderHook(
-      () => useQuery({ queryKey: ["probe", "unauthorized"], queryFn: () => Promise.reject(unauthorized()) }),
+      () =>
+        useQuery({
+          queryKey: ["probe", "unauthorized"],
+          queryFn: () => Promise.reject(unauthorized()),
+        }),
       { wrapper: Wrapper },
     );
 
@@ -40,9 +44,12 @@ describe("the global 401 handler wired into TanStack Query", () => {
     setToken("token-1");
     const handler = vi.fn();
     const unregister = onUnauthorized(handler);
-    const { result } = renderHook(() => useMutation({ mutationFn: () => Promise.reject(unauthorized()) }), {
-      wrapper: Wrapper,
-    });
+    const { result } = renderHook(
+      () => useMutation({ mutationFn: () => Promise.reject(unauthorized()) }),
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     act(() => result.current.mutate());
     await waitFor(() => expect(result.current.isError).toBe(true));
@@ -57,7 +64,11 @@ describe("the global 401 handler wired into TanStack Query", () => {
     const handler = vi.fn();
     const unregister = onUnauthorized(handler);
     const { result } = renderHook(
-      () => useQuery({ queryKey: ["probe", "conflict"], queryFn: () => Promise.reject(new ApiError(409)) }),
+      () =>
+        useQuery({
+          queryKey: ["probe", "conflict"],
+          queryFn: () => Promise.reject(new ApiError(409)),
+        }),
       { wrapper: Wrapper },
     );
 
@@ -70,9 +81,12 @@ describe("the global 401 handler wired into TanStack Query", () => {
 
   it("does not retry HTTP-level failures", async () => {
     const failing = vi.fn(() => Promise.reject(new ApiError(404)));
-    const { result } = renderHook(() => useQuery({ queryKey: ["probe", "no-retry"], queryFn: failing }), {
-      wrapper: Wrapper,
-    });
+    const { result } = renderHook(
+      () => useQuery({ queryKey: ["probe", "no-retry"], queryFn: failing }),
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 

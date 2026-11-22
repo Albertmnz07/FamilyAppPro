@@ -34,8 +34,7 @@ public class AuthToken {
     @Column(nullable = false)
     private Instant createdAt;
 
-    protected AuthToken() {
-    }
+    protected AuthToken() {}
 
     public AuthToken(String token, Persona persona, Instant expiresAt) {
         this.token = token;

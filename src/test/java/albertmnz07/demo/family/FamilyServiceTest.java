@@ -1,31 +1,29 @@
 package albertmnz07.demo.family;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.time.Duration;
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
-import java.time.Duration;
-import java.time.Instant;
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 @DataJpaTest
 @Import({FamilyService.class, InviteCodeGenerator.class})
 class FamilyServiceTest {
 
-    @Autowired
-    FamilyService familyService;
+    @Autowired FamilyService familyService;
 
-    @Autowired
-    PersonaRepository personaRepository;
+    @Autowired PersonaRepository personaRepository;
 
-    @Autowired
-    InviteRepository inviteRepository;
+    @Autowired InviteRepository inviteRepository;
 
     @Test
     void creatingAFamilyPersistsItWithTheCreatorAsAdmin() {
-        Persona creator = personaRepository.save(new Persona("creator", "12345678Z", "front-key", "back-key"));
+        Persona creator =
+                personaRepository.save(
+                        new Persona("creator", "12345678Z", "front-key", "back-key"));
 
         Family family = familyService.createFamily(creator, "Familia García");
 
@@ -36,7 +34,9 @@ class FamilyServiceTest {
 
     @Test
     void issuingAnInviteCreatesASixCharacterAlphanumericCodeExpiringInSevenDays() {
-        Persona creator = personaRepository.save(new Persona("creator", "12345678Z", "front-key", "back-key"));
+        Persona creator =
+                personaRepository.save(
+                        new Persona("creator", "12345678Z", "front-key", "back-key"));
         Family family = familyService.createFamily(creator, null);
         Instant before = Instant.now();
 

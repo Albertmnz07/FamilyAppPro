@@ -10,9 +10,9 @@ afterEach(() => {
 
 describe("register", () => {
   it("posts the credentials as multipart form data without any photo part", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(
-      jsonResponse({ id: "p1", username: "ana", dni: "12345678Z" }, 201),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ id: "p1", username: "ana", dni: "12345678Z" }, 201));
     vi.stubGlobal("fetch", fetchMock);
 
     const persona = await register({
@@ -40,7 +40,13 @@ describe("getMe", () => {
   it("GETs the profile with the bearer token and null photo URLs when none are uploaded", async () => {
     setToken("token-1");
     const fetchMock = vi.fn().mockResolvedValue(
-      jsonResponse({ id: "p1", username: "ana", dni: "12345678Z", frontPhotoUrl: null, backPhotoUrl: null }),
+      jsonResponse({
+        id: "p1",
+        username: "ana",
+        dni: "12345678Z",
+        frontPhotoUrl: null,
+        backPhotoUrl: null,
+      }),
     );
     vi.stubGlobal("fetch", fetchMock);
 
@@ -103,9 +109,9 @@ describe("uploadDniPhotos", () => {
 
   it("sends both parts when both are supplied", async () => {
     setToken("token-1");
-    const fetchMock = vi.fn().mockResolvedValue(
-      jsonResponse({ id: "p1", username: "ana", dni: "12345678Z" }),
-    );
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ id: "p1", username: "ana", dni: "12345678Z" }));
     vi.stubGlobal("fetch", fetchMock);
     const frontPhoto = new File(["front"], "front.jpg", { type: "image/jpeg" });
     const backPhoto = new File(["back"], "back.png", { type: "image/png" });

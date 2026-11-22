@@ -76,9 +76,7 @@ function DniPhotoFigure({
 }
 
 /** The destructive action a confirmation dialog is guarding, and its target. */
-type PendingAction =
-  | { kind: "revoke"; member: Member }
-  | { kind: "remove"; member: Member };
+type PendingAction = { kind: "revoke"; member: Member } | { kind: "remove"; member: Member };
 
 /** The copy each confirmation dialog shows; one branch on the action's kind. */
 function confirmationFor(action: PendingAction) {
@@ -131,9 +129,7 @@ export function FamilyWorkspacePage() {
         ? revokeConsent(familyId, action.member.personaId)
         : removeMember(familyId, action.member.personaId),
     onSuccess: (_data, action) => {
-      setSelected((current) =>
-        current?.personaId === action.member.personaId ? null : current,
-      );
+      setSelected((current) => (current?.personaId === action.member.personaId ? null : current));
       void queryClient.invalidateQueries({ queryKey: ["members", familyId] });
     },
   });

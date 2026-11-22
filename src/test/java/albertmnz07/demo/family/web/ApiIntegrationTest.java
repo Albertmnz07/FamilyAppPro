@@ -1,28 +1,5 @@
 package albertmnz07.demo.family.web;
 
-import albertmnz07.demo.family.ConsentRepository;
-import albertmnz07.demo.family.Family;
-import albertmnz07.demo.family.FamilyRepository;
-import albertmnz07.demo.family.Invite;
-import albertmnz07.demo.family.InviteRepository;
-import albertmnz07.demo.family.MembershipRepository;
-import albertmnz07.demo.family.Persona;
-import albertmnz07.demo.family.PersonaRepository;
-import albertmnz07.demo.family.auth.AuthTokenRepository;
-import com.jayway.jsonpath.JsonPath;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import java.time.Instant;
-import java.util.UUID;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.nullValue;
@@ -34,6 +11,29 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import albertmnz07.demo.family.ConsentRepository;
+import albertmnz07.demo.family.Family;
+import albertmnz07.demo.family.FamilyRepository;
+import albertmnz07.demo.family.Invite;
+import albertmnz07.demo.family.InviteRepository;
+import albertmnz07.demo.family.MembershipRepository;
+import albertmnz07.demo.family.Persona;
+import albertmnz07.demo.family.PersonaRepository;
+import albertmnz07.demo.family.auth.AuthTokenRepository;
+import com.jayway.jsonpath.JsonPath;
+import java.time.Instant;
+import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -48,26 +48,19 @@ class ApiIntegrationTest {
     private static final String MEMBER_DNI = "11111111H";
     private static final String OUTSIDER_DNI = "22222222J";
 
-    @Autowired
-    MockMvc mvc;
+    @Autowired MockMvc mvc;
 
-    @Autowired
-    PersonaRepository personas;
+    @Autowired PersonaRepository personas;
 
-    @Autowired
-    FamilyRepository families;
+    @Autowired FamilyRepository families;
 
-    @Autowired
-    InviteRepository invites;
+    @Autowired InviteRepository invites;
 
-    @Autowired
-    MembershipRepository memberships;
+    @Autowired MembershipRepository memberships;
 
-    @Autowired
-    ConsentRepository consents;
+    @Autowired ConsentRepository consents;
 
-    @Autowired
-    AuthTokenRepository tokens;
+    @Autowired AuthTokenRepository tokens;
 
     @AfterEach
     void cleanUp() {
@@ -138,9 +131,10 @@ class ApiIntegrationTest {
     void uploadsOneDniPhotoSideAndLeavesTheOtherAbsent() throws Exception {
         registerPersona(ADMIN_DNI);
 
-        mvc.perform(multipart(HttpMethod.PUT, PHOTOS_PATH)
-                .header(AUTH, bearer(ADMIN_DNI))
-                .file(photo("frontPhoto", "image/jpeg", (byte) 1)))
+        mvc.perform(
+                        multipart(HttpMethod.PUT, PHOTOS_PATH)
+                                .header(AUTH, bearer(ADMIN_DNI))
+                                .file(photo("frontPhoto", "image/jpeg", (byte) 1)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.frontPhotoUrl").value("/api/v1/personas/me/photos/front"))
                 .andExpect(jsonPath("$.backPhotoUrl").value(nullValue()));
@@ -153,10 +147,11 @@ class ApiIntegrationTest {
     void uploadsBothDniPhotoSides() throws Exception {
         registerPersona(ADMIN_DNI);
 
-        mvc.perform(multipart(HttpMethod.PUT, PHOTOS_PATH)
-                .header(AUTH, bearer(ADMIN_DNI))
-                .file(photo("frontPhoto", "image/jpeg", (byte) 1))
-                .file(photo("backPhoto", "image/png", (byte) 2)))
+        mvc.perform(
+                        multipart(HttpMethod.PUT, PHOTOS_PATH)
+                                .header(AUTH, bearer(ADMIN_DNI))
+                                .file(photo("frontPhoto", "image/jpeg", (byte) 1))
+                                .file(photo("backPhoto", "image/png", (byte) 2)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.frontPhotoUrl").value("/api/v1/personas/me/photos/front"))
                 .andExpect(jsonPath("$.backPhotoUrl").value("/api/v1/personas/me/photos/back"));
@@ -172,14 +167,16 @@ class ApiIntegrationTest {
     @Test
     void uploadingOneSidePreservesTheOther() throws Exception {
         registerPersona(ADMIN_DNI);
-        mvc.perform(multipart(HttpMethod.PUT, PHOTOS_PATH)
-                .header(AUTH, bearer(ADMIN_DNI))
-                .file(photo("frontPhoto", "image/jpeg", (byte) 1)))
+        mvc.perform(
+                        multipart(HttpMethod.PUT, PHOTOS_PATH)
+                                .header(AUTH, bearer(ADMIN_DNI))
+                                .file(photo("frontPhoto", "image/jpeg", (byte) 1)))
                 .andExpect(status().isOk());
 
-        mvc.perform(multipart(HttpMethod.PUT, PHOTOS_PATH)
-                .header(AUTH, bearer(ADMIN_DNI))
-                .file(photo("backPhoto", "image/png", (byte) 2)))
+        mvc.perform(
+                        multipart(HttpMethod.PUT, PHOTOS_PATH)
+                                .header(AUTH, bearer(ADMIN_DNI))
+                                .file(photo("backPhoto", "image/png", (byte) 2)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.frontPhotoUrl").value("/api/v1/personas/me/photos/front"))
                 .andExpect(jsonPath("$.backPhotoUrl").value("/api/v1/personas/me/photos/back"));
@@ -189,21 +186,39 @@ class ApiIntegrationTest {
     void rejectsAnOversizedPhotoWithoutDiscardingTheOtherSide() throws Exception {
         registerPersona(ADMIN_DNI);
         byte[] originalFront = {1, 1, 1};
-        mvc.perform(multipart(HttpMethod.PUT, PHOTOS_PATH)
-                .header(AUTH, bearer(ADMIN_DNI))
-                .file(new MockMultipartFile("frontPhoto", "front.jpg", "image/jpeg", originalFront)))
+        mvc.perform(
+                        multipart(HttpMethod.PUT, PHOTOS_PATH)
+                                .header(AUTH, bearer(ADMIN_DNI))
+                                .file(
+                                        new MockMultipartFile(
+                                                "frontPhoto",
+                                                "front.jpg",
+                                                "image/jpeg",
+                                                originalFront)))
                 .andExpect(status().isOk());
 
-        mvc.perform(multipart(HttpMethod.PUT, PHOTOS_PATH)
-                .header(AUTH, bearer(ADMIN_DNI))
-                .file(new MockMultipartFile("frontPhoto", "front.jpg", "image/jpeg", new byte[] {2, 2, 2}))
-                .file(new MockMultipartFile("backPhoto", "back.jpg", "image/jpeg", new byte[TEN_MB + 1])))
+        mvc.perform(
+                        multipart(HttpMethod.PUT, PHOTOS_PATH)
+                                .header(AUTH, bearer(ADMIN_DNI))
+                                .file(
+                                        new MockMultipartFile(
+                                                "frontPhoto",
+                                                "front.jpg",
+                                                "image/jpeg",
+                                                new byte[] {2, 2, 2}))
+                                .file(
+                                        new MockMultipartFile(
+                                                "backPhoto",
+                                                "back.jpg",
+                                                "image/jpeg",
+                                                new byte[TEN_MB + 1])))
                 .andExpect(status().is(413))
                 .andExpect(jsonPath("$.code").value("photo-too-large"));
 
-        MvcResult storedFront = mvc.perform(get("/api/v1/personas/me/photos/front").header(AUTH, bearer(ADMIN_DNI)))
-                .andExpect(status().isOk())
-                .andReturn();
+        MvcResult storedFront =
+                mvc.perform(get("/api/v1/personas/me/photos/front").header(AUTH, bearer(ADMIN_DNI)))
+                        .andExpect(status().isOk())
+                        .andReturn();
         assertThat(storedFront.getResponse().getContentAsByteArray()).isEqualTo(originalFront);
         mvc.perform(get("/api/v1/personas/me/photos/back").header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isNotFound());
@@ -213,27 +228,35 @@ class ApiIntegrationTest {
     void rejectsAnUnsupportedDniPhotoType() throws Exception {
         registerPersona(ADMIN_DNI);
 
-        mvc.perform(multipart(HttpMethod.PUT, PHOTOS_PATH)
-                .header(AUTH, bearer(ADMIN_DNI))
-                .file(new MockMultipartFile("frontPhoto", "notes.pdf", "application/pdf", new byte[] {1})))
+        mvc.perform(
+                        multipart(HttpMethod.PUT, PHOTOS_PATH)
+                                .header(AUTH, bearer(ADMIN_DNI))
+                                .file(
+                                        new MockMultipartFile(
+                                                "frontPhoto",
+                                                "notes.pdf",
+                                                "application/pdf",
+                                                new byte[] {1})))
                 .andExpect(status().isUnsupportedMediaType())
                 .andExpect(jsonPath("$.code").value("unsupported-photo-type"));
     }
 
     @Test
     void uploadingDniPhotosRequiresAuthentication() throws Exception {
-        mvc.perform(multipart(HttpMethod.PUT, PHOTOS_PATH)
-                .file(photo("frontPhoto", "image/jpeg", (byte) 1)))
+        mvc.perform(
+                        multipart(HttpMethod.PUT, PHOTOS_PATH)
+                                .file(photo("frontPhoto", "image/jpeg", (byte) 1)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("unauthorized"));
     }
 
     @Test
     void rejectsAShortPassword() throws Exception {
-        mvc.perform(multipart("/api/v1/personas")
-                .param("username", "someone")
-                .param("dni", ADMIN_DNI)
-                .param("password", "ab"))
+        mvc.perform(
+                        multipart("/api/v1/personas")
+                                .param("username", "someone")
+                                .param("dni", ADMIN_DNI)
+                                .param("password", "ab"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("validation-failed"));
     }
@@ -265,27 +288,36 @@ class ApiIntegrationTest {
     void loginRejectsAWrongPassword() throws Exception {
         registerPersona(ADMIN_DNI);
 
-        mvc.perform(post("/api/v1/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\":\"" + usernameFor(ADMIN_DNI) + "\",\"password\":\"wrongpass\"}"))
+        mvc.perform(
+                        post("/api/v1/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        "{\"username\":\""
+                                                + usernameFor(ADMIN_DNI)
+                                                + "\",\"password\":\"wrongpass\"}"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("unauthorized"));
     }
 
     @Test
     void loginRejectsAnUnknownUsername() throws Exception {
-        mvc.perform(post("/api/v1/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\":\"nobody\",\"password\":\"" + PASSWORD + "\"}"))
+        mvc.perform(
+                        post("/api/v1/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        "{\"username\":\"nobody\",\"password\":\""
+                                                + PASSWORD
+                                                + "\"}"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("unauthorized"));
     }
 
     @Test
     void loginRequiresUsernameAndPassword() throws Exception {
-        mvc.perform(post("/api/v1/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\":\"\",\"password\":\"\"}"))
+        mvc.perform(
+                        post("/api/v1/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"username\":\"\",\"password\":\"\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("validation-failed"));
     }
@@ -299,13 +331,17 @@ class ApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(1))
                 .andExpect(jsonPath("$.content[0].id").value(familyId.toString()))
-                .andExpect(jsonPath("$.content[0].adminPersonaId").value(adminOf(familyId).toString()));
+                .andExpect(
+                        jsonPath("$.content[0].adminPersonaId")
+                                .value(adminOf(familyId).toString()));
 
         mvc.perform(get("/api/v1/families/" + familyId).header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value("Familia García"));
 
-        mvc.perform(get("/api/v1/families/" + familyId + "/members").header(AUTH, bearer(ADMIN_DNI)))
+        mvc.perform(
+                        get("/api/v1/families/" + familyId + "/members")
+                                .header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(1))
                 .andExpect(jsonPath("$.content[0].personaId").value(adminOf(familyId).toString()))
@@ -319,10 +355,11 @@ class ApiIntegrationTest {
     void rejectsABlankFamilyName() throws Exception {
         registerPersona(ADMIN_DNI);
 
-        mvc.perform(post("/api/v1/families")
-                .header(AUTH, bearer(ADMIN_DNI))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"name\":\"  \"}"))
+        mvc.perform(
+                        post("/api/v1/families")
+                                .header(AUTH, bearer(ADMIN_DNI))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"name\":\"  \"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("validation-failed"));
     }
@@ -334,11 +371,17 @@ class ApiIntegrationTest {
         joinFamily(familyId, MEMBER_DNI);
         registerPersona(OUTSIDER_DNI);
 
-        mvc.perform(post("/api/v1/families/" + familyId + "/invites").header(AUTH, bearer(MEMBER_DNI)))
+        mvc.perform(
+                        post("/api/v1/families/" + familyId + "/invites")
+                                .header(AUTH, bearer(MEMBER_DNI)))
                 .andExpect(status().isForbidden());
-        mvc.perform(post("/api/v1/families/" + familyId + "/invites").header(AUTH, bearer(OUTSIDER_DNI)))
+        mvc.perform(
+                        post("/api/v1/families/" + familyId + "/invites")
+                                .header(AUTH, bearer(OUTSIDER_DNI)))
                 .andExpect(status().isForbidden());
-        mvc.perform(post("/api/v1/families/" + familyId + "/invites").header(AUTH, bearer(ADMIN_DNI)))
+        mvc.perform(
+                        post("/api/v1/families/" + familyId + "/invites")
+                                .header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.code").isString())
                 .andExpect(jsonPath("$.familyId").value(familyId.toString()));
@@ -350,21 +393,25 @@ class ApiIntegrationTest {
         UUID familyId = createFamily(ADMIN_DNI, "Familia García");
         UUID memberId = joinFamily(familyId, MEMBER_DNI);
 
-        mvc.perform(get("/api/v1/families/" + familyId + "/members").header(AUTH, bearer(ADMIN_DNI)))
+        mvc.perform(
+                        get("/api/v1/families/" + familyId + "/members")
+                                .header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(2))
                 .andExpect(jsonPath("$.content[0].dni").value(MEMBER_DNI))
                 .andExpect(jsonPath("$.content[1].dni").value(ADMIN_DNI));
 
-        mvc.perform(get("/api/v1/families/" + familyId + "/members/" + memberId + "/dni")
-                .header(AUTH, bearer(ADMIN_DNI)))
+        mvc.perform(
+                        get("/api/v1/families/" + familyId + "/members/" + memberId + "/dni")
+                                .header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.number").value(MEMBER_DNI))
                 .andExpect(jsonPath("$.frontPhotoUrl").value(nullValue()))
                 .andExpect(jsonPath("$.backPhotoUrl").value(nullValue()));
 
-        mvc.perform(get("/api/v1/families/" + familyId + "/members/" + memberId + "/dni/front")
-                .header(AUTH, bearer(ADMIN_DNI)))
+        mvc.perform(
+                        get("/api/v1/families/" + familyId + "/members/" + memberId + "/dni/front")
+                                .header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isNotFound());
     }
 
@@ -376,10 +423,13 @@ class ApiIntegrationTest {
 
         mvc.perform(get("/api/v1/families/" + familyId).header(AUTH, bearer(OUTSIDER_DNI)))
                 .andExpect(status().isForbidden());
-        mvc.perform(get("/api/v1/families/" + familyId + "/members").header(AUTH, bearer(OUTSIDER_DNI)))
+        mvc.perform(
+                        get("/api/v1/families/" + familyId + "/members")
+                                .header(AUTH, bearer(OUTSIDER_DNI)))
                 .andExpect(status().isForbidden());
-        mvc.perform(get("/api/v1/families/" + familyId + "/members/" + outsiderId + "/dni")
-                .header(AUTH, bearer(OUTSIDER_DNI)))
+        mvc.perform(
+                        get("/api/v1/families/" + familyId + "/members/" + outsiderId + "/dni")
+                                .header(AUTH, bearer(OUTSIDER_DNI)))
                 .andExpect(status().isForbidden());
     }
 
@@ -389,8 +439,9 @@ class ApiIntegrationTest {
         UUID familyId = createFamily(ADMIN_DNI, "Familia García");
         UUID outsiderId = registerPersona(OUTSIDER_DNI);
 
-        mvc.perform(get("/api/v1/families/" + familyId + "/members/" + outsiderId + "/dni")
-                .header(AUTH, bearer(ADMIN_DNI)))
+        mvc.perform(
+                        get("/api/v1/families/" + familyId + "/members/" + outsiderId + "/dni")
+                                .header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isNotFound());
     }
 
@@ -400,18 +451,22 @@ class ApiIntegrationTest {
         UUID familyId = createFamily(ADMIN_DNI, "Familia García");
         UUID memberId = joinFamily(familyId, MEMBER_DNI);
 
-        mvc.perform(delete("/api/v1/families/" + familyId + "/members/" + memberId + "/consent")
-                .header(AUTH, bearer(MEMBER_DNI)))
+        mvc.perform(
+                        delete("/api/v1/families/" + familyId + "/members/" + memberId + "/consent")
+                                .header(AUTH, bearer(MEMBER_DNI)))
                 .andExpect(status().isNoContent());
 
-        mvc.perform(get("/api/v1/families/" + familyId + "/members").header(AUTH, bearer(ADMIN_DNI)))
+        mvc.perform(
+                        get("/api/v1/families/" + familyId + "/members")
+                                .header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].personaId").value(memberId.toString()))
                 .andExpect(jsonPath("$.content[0].consentInForce").value(false))
                 .andExpect(jsonPath("$.content[0].dni").value(nullValue()));
 
-        mvc.perform(get("/api/v1/families/" + familyId + "/members/" + memberId + "/dni")
-                .header(AUTH, bearer(ADMIN_DNI)))
+        mvc.perform(
+                        get("/api/v1/families/" + familyId + "/members/" + memberId + "/dni")
+                                .header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isForbidden());
     }
 
@@ -421,8 +476,9 @@ class ApiIntegrationTest {
         UUID familyId = createFamily(ADMIN_DNI, "Familia García");
         UUID memberId = joinFamily(familyId, MEMBER_DNI);
 
-        mvc.perform(delete("/api/v1/families/" + familyId + "/members/" + memberId + "/consent")
-                .header(AUTH, bearer(ADMIN_DNI)))
+        mvc.perform(
+                        delete("/api/v1/families/" + familyId + "/members/" + memberId + "/consent")
+                                .header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isForbidden());
     }
 
@@ -432,11 +488,14 @@ class ApiIntegrationTest {
         UUID familyId = createFamily(ADMIN_DNI, "Familia García");
         UUID memberId = joinFamily(familyId, MEMBER_DNI);
 
-        mvc.perform(delete("/api/v1/families/" + familyId + "/members/" + memberId)
-                .header(AUTH, bearer(ADMIN_DNI)))
+        mvc.perform(
+                        delete("/api/v1/families/" + familyId + "/members/" + memberId)
+                                .header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isNoContent());
 
-        mvc.perform(get("/api/v1/families/" + familyId + "/members").header(AUTH, bearer(ADMIN_DNI)))
+        mvc.perform(
+                        get("/api/v1/families/" + familyId + "/members")
+                                .header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(1));
         mvc.perform(get("/api/v1/families/" + familyId).header(AUTH, bearer(MEMBER_DNI)))
@@ -448,8 +507,9 @@ class ApiIntegrationTest {
         registerPersona(ADMIN_DNI);
         UUID familyId = createFamily(ADMIN_DNI, "Familia García");
 
-        mvc.perform(delete("/api/v1/families/" + familyId + "/members/" + adminOf(familyId))
-                .header(AUTH, bearer(ADMIN_DNI)))
+        mvc.perform(
+                        delete("/api/v1/families/" + familyId + "/members/" + adminOf(familyId))
+                                .header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("cannot-remove-admin"));
     }
@@ -463,7 +523,9 @@ class ApiIntegrationTest {
         redeem(code, MEMBER_DNI);
         registerPersona(OUTSIDER_DNI);
 
-        mvc.perform(post("/api/v1/invites/" + code + "/redemption").header(AUTH, bearer(OUTSIDER_DNI)))
+        mvc.perform(
+                        post("/api/v1/invites/" + code + "/redemption")
+                                .header(AUTH, bearer(OUTSIDER_DNI)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("invite-already-redeemed"));
     }
@@ -495,7 +557,9 @@ class ApiIntegrationTest {
         UUID familyId = createFamily(ADMIN_DNI, "Familia García");
         joinFamily(familyId, MEMBER_DNI);
 
-        mvc.perform(get("/api/v1/families/" + familyId + "/members").header(AUTH, bearer(ADMIN_DNI)))
+        mvc.perform(
+                        get("/api/v1/families/" + familyId + "/members")
+                                .header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].dni").value(MEMBER_DNI))
                 .andExpect(jsonPath("$.content[1].dni").value(ADMIN_DNI));
@@ -507,10 +571,11 @@ class ApiIntegrationTest {
         UUID familyId = createFamily(ADMIN_DNI, "Familia García");
         joinFamily(familyId, MEMBER_DNI);
 
-        mvc.perform(get("/api/v1/families/" + familyId + "/members")
-                .header(AUTH, bearer(ADMIN_DNI))
-                .param("page", "1")
-                .param("size", "1"))
+        mvc.perform(
+                        get("/api/v1/families/" + familyId + "/members")
+                                .header(AUTH, bearer(ADMIN_DNI))
+                                .param("page", "1")
+                                .param("size", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(1))
                 .andExpect(jsonPath("$.content[0].dni").value(ADMIN_DNI))
@@ -524,10 +589,11 @@ class ApiIntegrationTest {
         createFamily(ADMIN_DNI, "Zúñiga");
         createFamily(ADMIN_DNI, "Alfaro");
 
-        mvc.perform(get("/api/v1/me/families")
-                .header(AUTH, bearer(ADMIN_DNI))
-                .param("page", "1")
-                .param("size", "1"))
+        mvc.perform(
+                        get("/api/v1/me/families")
+                                .header(AUTH, bearer(ADMIN_DNI))
+                                .param("page", "1")
+                                .param("size", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(1))
                 .andExpect(jsonPath("$.content[0].name").value("Zúñiga"))
@@ -556,9 +622,7 @@ class ApiIntegrationTest {
         registerPersona(ADMIN_DNI);
         createFamily(ADMIN_DNI, "Familia García");
 
-        mvc.perform(get("/api/v1/me/families")
-                .header(AUTH, bearer(ADMIN_DNI))
-                .param("size", "500"))
+        mvc.perform(get("/api/v1/me/families").header(AUTH, bearer(ADMIN_DNI)).param("size", "500"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.size").value(100))
                 .andExpect(jsonPath("$.content.length()").value(1));
@@ -570,9 +634,10 @@ class ApiIntegrationTest {
         UUID familyId = createFamily(ADMIN_DNI, "Familia García");
         joinFamily(familyId, MEMBER_DNI);
 
-        mvc.perform(get("/api/v1/families/" + familyId + "/members")
-                .header(AUTH, bearer(ADMIN_DNI))
-                .param("sort", "dni,desc"))
+        mvc.perform(
+                        get("/api/v1/families/" + familyId + "/members")
+                                .header(AUTH, bearer(ADMIN_DNI))
+                                .param("sort", "dni,desc"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].dni").value(MEMBER_DNI))
                 .andExpect(jsonPath("$.content[1].dni").value(ADMIN_DNI))
@@ -589,30 +654,33 @@ class ApiIntegrationTest {
 
     @Test
     void allowsCorsFromTheLocalFrontEnd() throws Exception {
-        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-                .options("/api/v1/families")
-                .header("Origin", "http://localhost:5173")
-                .header("Access-Control-Request-Method", "POST"))
+        mvc.perform(
+                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options(
+                                        "/api/v1/families")
+                                .header("Origin", "http://localhost:5173")
+                                .header("Access-Control-Request-Method", "POST"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"));
     }
 
     @Test
     void allowsCorsPutForDniPhotoUploads() throws Exception {
-        mvc.perform(options(PHOTOS_PATH)
-                .header("Origin", "http://localhost:5173")
-                .header("Access-Control-Request-Method", "PUT"))
+        mvc.perform(
+                        options(PHOTOS_PATH)
+                                .header("Origin", "http://localhost:5173")
+                                .header("Access-Control-Request-Method", "PUT"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"))
                 .andExpect(header().string("Access-Control-Allow-Methods", containsString("PUT")));
     }
 
     private MockMultipartFile photo(String part, String contentType, byte fill) {
-        return new MockMultipartFile(part, part + ".jpg", contentType, new byte[] {fill, fill, fill});
+        return new MockMultipartFile(
+                part, part + ".jpg", contentType, new byte[] {fill, fill, fill});
     }
 
-    private org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder registerRequest(
-            String username, String dni) {
+    private org.springframework.test.web.servlet.request.MockMultipartHttpServletRequestBuilder
+            registerRequest(String username, String dni) {
         return multipart("/api/v1/personas")
                 .param("username", username)
                 .param("dni", dni)
@@ -620,11 +688,12 @@ class ApiIntegrationTest {
     }
 
     private UUID registerPersona(String dni) throws Exception {
-        MvcResult result = mvc.perform(registerRequest(usernameFor(dni), dni))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.username").value(usernameFor(dni)))
-                .andExpect(jsonPath("$.dni").value(dni))
-                .andReturn();
+        MvcResult result =
+                mvc.perform(registerRequest(usernameFor(dni), dni))
+                        .andExpect(status().isCreated())
+                        .andExpect(jsonPath("$.username").value(usernameFor(dni)))
+                        .andExpect(jsonPath("$.dni").value(dni))
+                        .andReturn();
         return UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.id"));
     }
 
@@ -633,29 +702,40 @@ class ApiIntegrationTest {
     }
 
     private String bearer(String dni) throws Exception {
-        MvcResult result = mvc.perform(post("/api/v1/auth/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\":\"" + usernameFor(dni) + "\",\"password\":\"" + PASSWORD + "\"}"))
-                .andExpect(status().isOk())
-                .andReturn();
+        MvcResult result =
+                mvc.perform(
+                                post("/api/v1/auth/login")
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(
+                                                "{\"username\":\""
+                                                        + usernameFor(dni)
+                                                        + "\",\"password\":\""
+                                                        + PASSWORD
+                                                        + "\"}"))
+                        .andExpect(status().isOk())
+                        .andReturn();
         return "Bearer " + JsonPath.read(result.getResponse().getContentAsString(), "$.token");
     }
 
     private UUID createFamily(String dni, String name) throws Exception {
-        MvcResult result = mvc.perform(post("/api/v1/families")
-                .header(AUTH, bearer(dni))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"name\":\"" + name + "\"}"))
-                .andExpect(status().isCreated())
-                .andReturn();
+        MvcResult result =
+                mvc.perform(
+                                post("/api/v1/families")
+                                        .header(AUTH, bearer(dni))
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content("{\"name\":\"" + name + "\"}"))
+                        .andExpect(status().isCreated())
+                        .andReturn();
         return UUID.fromString(JsonPath.read(result.getResponse().getContentAsString(), "$.id"));
     }
 
     private String issueInvite(String dni, UUID familyId) throws Exception {
-        MvcResult result = mvc.perform(post("/api/v1/families/" + familyId + "/invites")
-                .header(AUTH, bearer(dni)))
-                .andExpect(status().isCreated())
-                .andReturn();
+        MvcResult result =
+                mvc.perform(
+                                post("/api/v1/families/" + familyId + "/invites")
+                                        .header(AUTH, bearer(dni)))
+                        .andExpect(status().isCreated())
+                        .andReturn();
         return JsonPath.read(result.getResponse().getContentAsString(), "$.code");
     }
 
