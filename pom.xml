@@ -100,6 +100,29 @@
 
 	<build>
 		<plugins>
+			<!-- Code style is owned by the tooling (ADR-0009): google-java-format
+			     in AOSP style formats every Java source. `spotless:check` is
+			     bound to verify, so `mvn test` never needs the formatter. -->
+			<plugin>
+				<groupId>com.diffplug.spotless</groupId>
+				<artifactId>spotless-maven-plugin</artifactId>
+				<version>3.12.0</version>
+				<configuration>
+					<java>
+						<googleJavaFormat>
+							<version>2.0.0</version>
+							<style>AOSP</style>
+						</googleJavaFormat>
+					</java>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>

@@ -1,0 +1,3 @@
+# Generated from the API contract (`npm run api:refresh`): never hand-formatted.
+src/api/schema.d.ts
+openapi.json
