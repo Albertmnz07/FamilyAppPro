@@ -16,6 +16,10 @@ Rules the review agent enforces. Only **judgement calls** live here: anything a 
 - **Every list screen has three states**: loading (`role="status"`), empty (`.empty-state` with a next action), and failure (`role="alert"` with `Reintentar`).
 - **Row actions carry a distinguishing `aria-label`** (`Retirar a {username}`), so a screen reader announces which row a button belongs to.
 
+## Formatting
+
+- **Style is owned by the tools, never by hand.** Spotless formats the Java back-end with google-java-format (AOSP) and Prettier formats the front-end TypeScript/TSX/CSS. Run `make format` to apply them or `make format-check` to verify; the pre-commit hook applies them to the staged files (ADR-0009).
+
 ## Tests
 
 - **Tests sit beside their subject** (`src/api/members.test.ts`, `src/pages/FamilyWorkspacePage.test.tsx`) and stub the HTTP boundary with `vi.stubGlobal("fetch", …)` plus the helpers in `src/test/http.ts`.

@@ -200,10 +200,23 @@ The production build is integrated into the single Spring artifact: `npm run bui
 
 ### Checks
 
-`npm run check` runs typecheck, lint and the test suite in one go; lint treats warnings as failures. From the repository root, `make check` is the same command: `npm --prefix frontend run check`. The repository ships its git hooks in `.githooks/` — a pre-commit running the front-end checks and a pre-push running `./mvnw -q test`. Enable them once per clone:
+`npm run check` runs typecheck, lint and the test suite in one go; lint treats warnings as failures. From the repository root, `make check` is the same command: `npm --prefix frontend run check`.
+
+### Formatting
+
+Code style is owned by the tooling (ADR-0009), not by hand: Spotless formats the Java back-end with google-java-format (AOSP style) and Prettier formats the front-end TypeScript/TSX/CSS. Apply or verify every file with:
 
 ```bash
-git config core.hooksPath .githooks
+make format        # apply both formatters to the whole tree
+make format-check  # verify without writing (what pre-push runs)
+```
+
+### Git hooks
+
+The repository ships its git hooks in `.githooks/`: the pre-commit formats the staged Java and front-end files, re-stages them and then runs the front-end checks; the pre-push runs the strict format checks and `./mvnw -q test`. Enable them once per clone:
+
+```bash
+make setup
 ```
 
 ## Tests

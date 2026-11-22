@@ -1,0 +1,7 @@
+# Code formatting tools
+
+Formatting is owned by tooling, not by hand: Spotless runs google-java-format (AOSP style) over the back-end and Prettier over the front-end, both configured in-repo. The `pre-commit` hook formats the staged Java and front-end files and re-stages them, so a commit cannot land unformatted, and `pre-push` re-verifies with the strict checks. The front-end keeps the conventions the repository already used (semicolons, double quotes, 100-column width); one isolated commit reformats the whole repository so the baseline is uniform rather than ratcheted.
+
+**Considered options:** oxfmt, the Oxc formatter that would have matched the oxlint already in use, was rejected because it is not idempotent — a single pass over a chained call carrying an object argument is rewritten again by the next pass, so `oxfmt --check` fails on the file oxfmt has just written (oxc-project/oxc#28916), which breaks the commit-then-verify loop. Spotless `ratchetFrom` was rejected because it leaves two styles side by side instead of one, and palantir-java-format (120 columns) in favour of the 100-column google-java-format AOSP.
+
+**Consequences:** agents must not format by hand — they run `make format` and let the commit hook be the source of truth for style. A fresh clone must run `make setup` once to enable the hooks, which are per-clone configuration. Format-only enforcement in CI is deferred to a later ticket.

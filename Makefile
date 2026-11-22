@@ -16,16 +16,23 @@ JAR          := target/demo-0.0.1-SNAPSHOT.jar
 
 .DEFAULT_GOAL := help
 
-.PHONY: help \
+.PHONY: help setup \
         dev dev-detached dev-down dev-restart dev-logs \
         prod prod-start prod-rebuild prod-down prod-logs \
         db-reset-dev db-reset-prod \
         test test-backend test-frontend check \
+        format format-check \
         build run clean
 
 ## help: list the available targets
 help:
 	@grep -E '^## ' $(MAKEFILE_LIST) | sed 's/## //'
+
+# --- Setup ------------------------------------------------------------------
+
+## setup: enable the repository git hooks in this clone (required once)
+setup:
+	git config core.hooksPath .githooks
 
 # --- Containers -------------------------------------------------------------
 
@@ -97,6 +104,18 @@ test-frontend:
 
 ## check: alias for test-frontend, matching the git hook
 check: test-frontend
+
+# --- Formatting -------------------------------------------------------------
+
+## format: apply Spotless (back-end) and Prettier (front-end) to the whole tree
+format:
+	./mvnw -q spotless:apply
+	npm --prefix frontend run format
+
+## format-check: verify formatting without writing (what pre-push runs)
+format-check:
+	./mvnw -q spotless:check
+	npm --prefix frontend run format:check
 
 # --- Build and run ----------------------------------------------------------
 

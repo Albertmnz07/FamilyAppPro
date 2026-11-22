@@ -1,5 +1,8 @@
 #!/bin/sh
-# Slow guardrail: the backend suite runs before anything leaves the machine.
-# Enable once per clone with: git config core.hooksPath .githooks
+# Slow guardrail: the strict format checks and the back-end suite run before
+# anything leaves the machine.
+# Enable once per clone with: make setup
 set -e
+./mvnw -q spotless:check
+npm --prefix frontend run format:check
 ./mvnw -q test

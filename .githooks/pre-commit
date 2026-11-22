@@ -1,5 +1,30 @@
 #!/bin/sh
-# Fast guardrail: typecheck, lint (warnings fail) and the front-end suite.
-# Enable once per clone with: git config core.hooksPath .githooks
+# Fast guardrail: format the staged files, re-stage them, then typecheck,
+# lint (warnings fail) and run the front-end suite.
+# Enable once per clone with: make setup
+#
+# The formatters never touch files you did not stage: committing only ever
+# reformats what is already in the commit. google-java-format (AOSP) owns the
+# back-end, Prettier owns the front-end (ADR-0009).
 set -e
+
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+
+# Front-end: Prettier formats the staged TypeScript/TSX/CSS in place. The
+# generated API types are excluded (they come from `npm run api:refresh`).
+files=$(printf '%s\n' "$staged" | grep -E '^frontend/src/.*\.(ts|tsx|css)$' | grep -v 'schema\.d\.ts' || true)
+if [ -n "$files" ]; then
+  printf '%s\n' "$files" | xargs frontend/node_modules/.bin/prettier --write
+  printf '%s\n' "$files" | xargs git add
+fi
+
+# Back-end: Spotless formats the staged Java files in place. `spotlessFiles`
+# takes the absolute path of each file as a regular expression.
+files=$(printf '%s\n' "$staged" | grep -E '\.java$' || true)
+if [ -n "$files" ]; then
+  patterns=$(printf '%s\n' "$files" | sed 's|\.|\\.|g; s|^|'"$PWD"'/|' | paste -sd, -)
+  ./mvnw -q spotless:apply -DspotlessFiles="$patterns"
+  printf '%s\n' "$files" | xargs git add
+fi
+
 npm --prefix frontend run check
