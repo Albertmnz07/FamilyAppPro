@@ -20,7 +20,6 @@ import albertmnz07.familyapp.application.query.PageQuery;
 import albertmnz07.familyapp.application.query.PagedResult;
 import albertmnz07.familyapp.application.query.QueryHandler;
 import albertmnz07.familyapp.domain.valueobject.PersonaId;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -77,15 +76,14 @@ public class FamilyController {
     @PostMapping("/api/v1/families")
     @ResponseStatus(HttpStatus.CREATED)
     public FamilyResponse create(
-            @Parameter(hidden = true) @ActingPersona PersonaId creator,
-            @Valid @RequestBody CreateFamilyRequest request) {
+            @ActingPersona PersonaId creator, @Valid @RequestBody CreateFamilyRequest request) {
         return FamilyResponse.of(
                 createFamily.handle(new CreateFamilyCommand(creator.value(), request.name())));
     }
 
     @GetMapping("/api/v1/me/families")
     public Page<FamilyResponse> mine(
-            @Parameter(hidden = true) @ActingPersona PersonaId personaId,
+            @ActingPersona PersonaId personaId,
             @PageableDefault(size = PageQuery.DEFAULT_SIZE) Pageable pageable) {
         PagedResult<FamilyView> result =
                 listMyFamilies.handle(
@@ -95,23 +93,20 @@ public class FamilyController {
     }
 
     @GetMapping("/api/v1/families/{familyId}")
-    public FamilyResponse get(
-            @Parameter(hidden = true) @ActingPersona PersonaId viewer,
-            @PathVariable UUID familyId) {
+    public FamilyResponse get(@ActingPersona PersonaId viewer, @PathVariable UUID familyId) {
         return FamilyResponse.of(getFamily.handle(new GetFamilyQuery(viewer.value(), familyId)));
     }
 
     @PostMapping("/api/v1/families/{familyId}/invites")
     @ResponseStatus(HttpStatus.CREATED)
-    public InviteResponse issueInvite(
-            @Parameter(hidden = true) @ActingPersona PersonaId actor, @PathVariable UUID familyId) {
+    public InviteResponse issueInvite(@ActingPersona PersonaId actor, @PathVariable UUID familyId) {
         return InviteResponse.of(
                 issueInvite.handle(new IssueInviteCommand(actor.value(), familyId)));
     }
 
     @GetMapping("/api/v1/families/{familyId}/members")
     public Page<MemberResponse> members(
-            @Parameter(hidden = true) @ActingPersona PersonaId viewer,
+            @ActingPersona PersonaId viewer,
             @PathVariable UUID familyId,
             @PageableDefault(size = PageQuery.DEFAULT_SIZE) Pageable pageable) {
         PagedResult<MemberView> result =
@@ -124,7 +119,7 @@ public class FamilyController {
     @DeleteMapping("/api/v1/families/{familyId}/members/{personaId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void removeMember(
-            @Parameter(hidden = true) @ActingPersona PersonaId actor,
+            @ActingPersona PersonaId actor,
             @PathVariable UUID familyId,
             @PathVariable UUID personaId) {
         removeMember.handle(new RemoveMemberCommand(actor.value(), familyId, personaId));
@@ -133,7 +128,7 @@ public class FamilyController {
     @DeleteMapping("/api/v1/families/{familyId}/members/{personaId}/consent")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void revokeConsent(
-            @Parameter(hidden = true) @ActingPersona PersonaId actor,
+            @ActingPersona PersonaId actor,
             @PathVariable UUID familyId,
             @PathVariable UUID personaId) {
         revokeConsent.handle(new RevokeConsentCommand(actor.value(), familyId, personaId));
@@ -141,7 +136,7 @@ public class FamilyController {
 
     @GetMapping("/api/v1/families/{familyId}/members/{personaId}/dni")
     public DniResponse dni(
-            @Parameter(hidden = true) @ActingPersona PersonaId viewer,
+            @ActingPersona PersonaId viewer,
             @PathVariable UUID familyId,
             @PathVariable UUID personaId) {
         return DniResponse.of(
@@ -150,7 +145,7 @@ public class FamilyController {
 
     @GetMapping("/api/v1/families/{familyId}/members/{personaId}/dni/front")
     public ResponseEntity<byte[]> frontPhoto(
-            @Parameter(hidden = true) @ActingPersona PersonaId viewer,
+            @ActingPersona PersonaId viewer,
             @PathVariable UUID familyId,
             @PathVariable UUID personaId) {
         return memberPhoto(viewer, familyId, personaId, Side.FRONT);
@@ -158,7 +153,7 @@ public class FamilyController {
 
     @GetMapping("/api/v1/families/{familyId}/members/{personaId}/dni/back")
     public ResponseEntity<byte[]> backPhoto(
-            @Parameter(hidden = true) @ActingPersona PersonaId viewer,
+            @ActingPersona PersonaId viewer,
             @PathVariable UUID familyId,
             @PathVariable UUID personaId) {
         return memberPhoto(viewer, familyId, personaId, Side.BACK);

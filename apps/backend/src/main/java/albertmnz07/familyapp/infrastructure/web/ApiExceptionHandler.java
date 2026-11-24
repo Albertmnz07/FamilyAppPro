@@ -160,31 +160,6 @@ public class ApiExceptionHandler {
                 "photo-too-large");
     }
 
-    @ExceptionHandler(albertmnz07.familyapp.legacy.family.error.NotFoundException.class)
-    public ProblemDetail legacyNotFound(
-            albertmnz07.familyapp.legacy.family.error.NotFoundException ex) {
-        return problem(HttpStatus.NOT_FOUND, "Not found", ex.getMessage(), "not-found");
-    }
-
-    @ExceptionHandler(albertmnz07.familyapp.legacy.family.error.InviteExpiredException.class)
-    public ProblemDetail legacyInviteExpired(
-            albertmnz07.familyapp.legacy.family.error.InviteExpiredException ex) {
-        return problem(HttpStatus.CONFLICT, "Conflict", ex.getMessage(), "invite-expired");
-    }
-
-    @ExceptionHandler(
-            albertmnz07.familyapp.legacy.family.error.InviteAlreadyRedeemedException.class)
-    public ProblemDetail legacyInviteAlreadyRedeemed(
-            albertmnz07.familyapp.legacy.family.error.InviteAlreadyRedeemedException ex) {
-        return problem(HttpStatus.CONFLICT, "Conflict", ex.getMessage(), "invite-already-redeemed");
-    }
-
-    @ExceptionHandler(albertmnz07.familyapp.legacy.family.error.CannotRemoveAdminException.class)
-    public ProblemDetail legacyCannotRemoveAdmin(
-            albertmnz07.familyapp.legacy.family.error.CannotRemoveAdminException ex) {
-        return problem(HttpStatus.CONFLICT, "Conflict", ex.getMessage(), "cannot-remove-admin");
-    }
-
     @ExceptionHandler(InvalidValueException.class)
     public ProblemDetail invalidValue(InvalidValueException ex) {
         return problem(HttpStatus.BAD_REQUEST, "Bad request", ex.getMessage(), "bad-request");

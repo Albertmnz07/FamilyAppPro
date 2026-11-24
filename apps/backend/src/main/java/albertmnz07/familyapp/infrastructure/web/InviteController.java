@@ -4,7 +4,6 @@ import albertmnz07.familyapp.application.command.CommandHandler;
 import albertmnz07.familyapp.application.command.RedeemInviteCommand;
 import albertmnz07.familyapp.application.command.RedeemInviteResult;
 import albertmnz07.familyapp.domain.valueobject.PersonaId;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,8 +21,7 @@ public class InviteController {
 
     @PostMapping("/api/v1/invites/{code}/redemption")
     public RedemptionResponse redeem(
-            @Parameter(hidden = true) @ActingPersona PersonaId personaId,
-            @PathVariable String code) {
+            @ActingPersona PersonaId personaId, @PathVariable String code) {
         return RedemptionResponse.of(
                 redeemInvite.handle(new RedeemInviteCommand(personaId.value(), code)));
     }

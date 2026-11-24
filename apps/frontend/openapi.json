@@ -109,14 +109,6 @@
         "operationId": "redeem",
         "parameters": [
           {
-            "name": "persona",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/Persona"
-            }
-          },
-          {
             "name": "code",
             "in": "path",
             "required": true,
@@ -145,16 +137,6 @@
           "Families"
         ],
         "operationId": "create",
-        "parameters": [
-          {
-            "name": "creator",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/Persona"
-            }
-          }
-        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -186,14 +168,6 @@
         ],
         "operationId": "issueInvite",
         "parameters": [
-          {
-            "name": "actor",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/Persona"
-            }
-          },
           {
             "name": "familyId",
             "in": "path",
@@ -254,16 +228,6 @@
           "Personas"
         ],
         "operationId": "me",
-        "parameters": [
-          {
-            "name": "persona",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/Persona"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -284,16 +248,6 @@
           "Personas"
         ],
         "operationId": "myFrontPhoto",
-        "parameters": [
-          {
-            "name": "persona",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/Persona"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -315,16 +269,6 @@
           "Personas"
         ],
         "operationId": "myBackPhoto",
-        "parameters": [
-          {
-            "name": "persona",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/Persona"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "description": "OK",
@@ -347,14 +291,6 @@
         ],
         "operationId": "mine",
         "parameters": [
-          {
-            "name": "persona",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/Persona"
-            }
-          },
           {
             "name": "pageable",
             "in": "query",
@@ -386,14 +322,6 @@
         "operationId": "get",
         "parameters": [
           {
-            "name": "viewer",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/Persona"
-            }
-          },
-          {
             "name": "familyId",
             "in": "path",
             "required": true,
@@ -424,14 +352,6 @@
         ],
         "operationId": "members",
         "parameters": [
-          {
-            "name": "viewer",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/Persona"
-            }
-          },
           {
             "name": "familyId",
             "in": "path",
@@ -472,14 +392,6 @@
         "operationId": "dni",
         "parameters": [
           {
-            "name": "viewer",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/Persona"
-            }
-          },
-          {
             "name": "familyId",
             "in": "path",
             "required": true,
@@ -519,14 +431,6 @@
         ],
         "operationId": "frontPhoto",
         "parameters": [
-          {
-            "name": "viewer",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/Persona"
-            }
-          },
           {
             "name": "familyId",
             "in": "path",
@@ -569,14 +473,6 @@
         "operationId": "backPhoto",
         "parameters": [
           {
-            "name": "viewer",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/Persona"
-            }
-          },
-          {
             "name": "familyId",
             "in": "path",
             "required": true,
@@ -618,14 +514,6 @@
         "operationId": "removeMember",
         "parameters": [
           {
-            "name": "actor",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/Persona"
-            }
-          },
-          {
             "name": "familyId",
             "in": "path",
             "required": true,
@@ -658,14 +546,6 @@
         ],
         "operationId": "revokeConsent",
         "parameters": [
-          {
-            "name": "actor",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/Persona"
-            }
-          },
           {
             "name": "familyId",
             "in": "path",
@@ -719,36 +599,6 @@
               "string",
               "null"
             ]
-          }
-        }
-      },
-      "Persona": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "username": {
-            "type": "string"
-          },
-          "dni": {
-            "type": "string"
-          },
-          "passwordHash": {
-            "type": "string"
-          },
-          "frontPhotoKey": {
-            "type": "string"
-          },
-          "frontPhotoContentType": {
-            "type": "string"
-          },
-          "backPhotoKey": {
-            "type": "string"
-          },
-          "backPhotoContentType": {
-            "type": "string"
           }
         }
       },

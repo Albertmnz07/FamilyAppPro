@@ -11,7 +11,6 @@ import albertmnz07.familyapp.application.query.GetMyPersonaQuery;
 import albertmnz07.familyapp.application.query.PersonaView;
 import albertmnz07.familyapp.application.query.QueryHandler;
 import albertmnz07.familyapp.domain.valueobject.PersonaId;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -70,13 +69,13 @@ public class PersonaController {
     }
 
     @GetMapping("/me")
-    public PersonaResponse me(@Parameter(hidden = true) @ActingPersona PersonaId personaId) {
+    public PersonaResponse me(@ActingPersona PersonaId personaId) {
         return PersonaResponse.of(getMyPersona.handle(new GetMyPersonaQuery(personaId.value())));
     }
 
     @PutMapping(value = "/me/dni/photos", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public PersonaResponse updateDniPhotos(
-            @Parameter(hidden = true) @ActingPersona PersonaId personaId,
+            @ActingPersona PersonaId personaId,
             @RequestParam(required = false) MultipartFile frontPhoto,
             @RequestParam(required = false) MultipartFile backPhoto)
             throws IOException {
@@ -95,14 +94,12 @@ public class PersonaController {
     }
 
     @GetMapping("/me/photos/front")
-    public ResponseEntity<byte[]> myFrontPhoto(
-            @Parameter(hidden = true) @ActingPersona PersonaId personaId) {
+    public ResponseEntity<byte[]> myFrontPhoto(@ActingPersona PersonaId personaId) {
         return photo(personaId, Side.FRONT);
     }
 
     @GetMapping("/me/photos/back")
-    public ResponseEntity<byte[]> myBackPhoto(
-            @Parameter(hidden = true) @ActingPersona PersonaId personaId) {
+    public ResponseEntity<byte[]> myBackPhoto(@ActingPersona PersonaId personaId) {
         return photo(personaId, Side.BACK);
     }
 

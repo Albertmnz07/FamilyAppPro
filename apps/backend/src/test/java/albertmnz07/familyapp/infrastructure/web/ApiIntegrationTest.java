@@ -1,4 +1,4 @@
-package albertmnz07.familyapp.legacy.family.web;
+package albertmnz07.familyapp.infrastructure.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -13,16 +13,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import albertmnz07.familyapp.infrastructure.persistence.AuthTokenJpaRepository;
-import albertmnz07.familyapp.legacy.family.ConsentRepository;
-import albertmnz07.familyapp.legacy.family.Family;
-import albertmnz07.familyapp.legacy.family.FamilyRepository;
-import albertmnz07.familyapp.legacy.family.Invite;
-import albertmnz07.familyapp.legacy.family.InviteRepository;
-import albertmnz07.familyapp.legacy.family.MembershipRepository;
-import albertmnz07.familyapp.legacy.family.Persona;
-import albertmnz07.familyapp.legacy.family.PersonaRepository;
+import albertmnz07.familyapp.infrastructure.persistence.ConsentJpaRepository;
+import albertmnz07.familyapp.infrastructure.persistence.FamilyJpaRepository;
+import albertmnz07.familyapp.infrastructure.persistence.InviteJpaEntity;
+import albertmnz07.familyapp.infrastructure.persistence.InviteJpaRepository;
+import albertmnz07.familyapp.infrastructure.persistence.MembershipJpaRepository;
+import albertmnz07.familyapp.infrastructure.persistence.PersonaJpaEntity;
+import albertmnz07.familyapp.infrastructure.persistence.PersonaJpaRepository;
 import com.jayway.jsonpath.JsonPath;
+import io.swagger.v3.oas.annotations.Parameter;
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -50,19 +52,17 @@ class ApiIntegrationTest {
 
     @Autowired MockMvc mvc;
 
-    @Autowired PersonaRepository personas;
+    @Autowired PersonaJpaRepository personas;
 
-    @Autowired FamilyRepository families;
+    @Autowired FamilyJpaRepository families;
 
-    @Autowired InviteRepository invites;
+    @Autowired InviteJpaRepository invites;
 
-    @Autowired MembershipRepository memberships;
+    @Autowired MembershipJpaRepository memberships;
 
-    @Autowired ConsentRepository consents;
+    @Autowired ConsentJpaRepository consents;
 
     @Autowired AuthTokenJpaRepository tokens;
-
-    @Autowired org.springframework.context.ApplicationContext context;
 
     @AfterEach
     void cleanUp() {
@@ -77,7 +77,7 @@ class ApiIntegrationTest {
     @Test
     void registersAPersonaWithoutPhotos() throws Exception {
         UUID personaId = registerPersona(ADMIN_DNI);
-        Persona persona = personas.findById(personaId).orElseThrow();
+        PersonaJpaEntity persona = personas.findById(personaId).orElseThrow();
 
         assertThat(persona.getFrontPhotoKey()).isNull();
         assertThat(persona.getBackPhotoKey()).isNull();
@@ -456,8 +456,8 @@ class ApiIntegrationTest {
     }
 
     @Test
-    void redeemingAnInviteMakesThePersonaVisible() throws Exception {
-        registerPersona(ADMIN_DNI);
+    void redeemingAnInviteMakesThePersonaAndCreatorMutuallyVisible() throws Exception {
+        UUID adminId = registerPersona(ADMIN_DNI);
         UUID familyId = createFamily(ADMIN_DNI, "Familia García");
         UUID memberId = joinFamily(familyId, MEMBER_DNI);
 
@@ -476,6 +476,12 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.number").value(MEMBER_DNI))
                 .andExpect(jsonPath("$.frontPhotoUrl").value(nullValue()))
                 .andExpect(jsonPath("$.backPhotoUrl").value(nullValue()));
+
+        mvc.perform(
+                        get("/api/v1/families/" + familyId + "/members/" + adminId + "/dni")
+                                .header(AUTH, bearer(MEMBER_DNI)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.number").value(ADMIN_DNI));
 
         mvc.perform(
                         get("/api/v1/families/" + familyId + "/members/" + memberId + "/dni/front")
@@ -571,6 +577,58 @@ class ApiIntegrationTest {
     }
 
     @Test
+    void reAcceptingAFreshInviteAfterConsentRevocationOrRemovalRestoresVisibility()
+            throws Exception {
+        UUID adminId = registerPersona(ADMIN_DNI);
+        UUID familyId = createFamily(ADMIN_DNI, "Familia García");
+        UUID memberId = registerPersona(MEMBER_DNI);
+        String initialCode = issueInvite(ADMIN_DNI, familyId);
+        redeem(initialCode, MEMBER_DNI);
+
+        mvc.perform(
+                        delete("/api/v1/families/" + familyId + "/members/" + memberId + "/consent")
+                                .header(AUTH, bearer(MEMBER_DNI)))
+                .andExpect(status().isNoContent());
+        mvc.perform(
+                        get("/api/v1/families/" + familyId + "/members/" + memberId + "/dni")
+                                .header(AUTH, bearer(ADMIN_DNI)))
+                .andExpect(status().isForbidden());
+
+        redeem(issueInvite(ADMIN_DNI, familyId), MEMBER_DNI);
+        mvc.perform(
+                        get("/api/v1/families/" + familyId + "/members/" + memberId + "/dni")
+                                .header(AUTH, bearer(ADMIN_DNI)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.number").value(MEMBER_DNI));
+
+        mvc.perform(
+                        delete("/api/v1/families/" + familyId + "/members/" + memberId)
+                                .header(AUTH, bearer(ADMIN_DNI)))
+                .andExpect(status().isNoContent());
+        mvc.perform(
+                        post("/api/v1/invites/" + initialCode + "/redemption")
+                                .header(AUTH, bearer(MEMBER_DNI)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("invite-already-redeemed"));
+        mvc.perform(
+                        get("/api/v1/families/" + familyId + "/members/" + memberId + "/dni")
+                                .header(AUTH, bearer(ADMIN_DNI)))
+                .andExpect(status().isNotFound());
+
+        redeem(issueInvite(ADMIN_DNI, familyId), MEMBER_DNI);
+        mvc.perform(
+                        get("/api/v1/families/" + familyId + "/members/" + memberId + "/dni")
+                                .header(AUTH, bearer(ADMIN_DNI)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.number").value(MEMBER_DNI));
+        mvc.perform(
+                        get("/api/v1/families/" + familyId + "/members/" + adminId + "/dni")
+                                .header(AUTH, bearer(MEMBER_DNI)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.number").value(ADMIN_DNI));
+    }
+
+    @Test
     void theAdminCannotBeRemoved() throws Exception {
         registerPersona(ADMIN_DNI);
         UUID familyId = createFamily(ADMIN_DNI, "Familia García");
@@ -602,8 +660,13 @@ class ApiIntegrationTest {
     void anExpiredInviteIsRejected() throws Exception {
         registerPersona(ADMIN_DNI);
         UUID familyId = createFamily(ADMIN_DNI, "Familia García");
-        Family family = families.findById(familyId).orElseThrow();
-        invites.save(new Invite("EXPIRE", family, Instant.now().minusSeconds(60)));
+        invites.save(
+                new InviteJpaEntity(
+                        UUID.randomUUID(),
+                        "EXPIRE",
+                        familyId,
+                        Instant.now().minusSeconds(60),
+                        null));
         registerPersona(OUTSIDER_DNI);
 
         mvc.perform(post("/api/v1/invites/EXPIRE/redemption").header(AUTH, bearer(OUTSIDER_DNI)))
@@ -713,18 +776,34 @@ class ApiIntegrationTest {
     }
 
     @Test
-    void exposesTheOpenApiDescription() throws Exception {
-        mvc.perform(get("/v3/api-docs"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.paths['/api/v1/personas'].post").exists())
-                .andExpect(jsonPath("$.paths['/api/v1/families/{familyId}/members'].get").exists());
+    void exposesTheOpenApiDescriptionWithoutLeakingActingPersonaParameters() throws Exception {
+        Parameter parameterMeta = ActingPersona.class.getAnnotation(Parameter.class);
+        assertThat(parameterMeta).isNotNull();
+        assertThat(parameterMeta.hidden()).isTrue();
+
+        MvcResult result =
+                mvc.perform(get("/v3/api-docs"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.paths['/api/v1/personas'].post").exists())
+                        .andExpect(
+                                jsonPath("$.paths['/api/v1/families/{familyId}/members'].get")
+                                        .exists())
+                        .andExpect(jsonPath("$.components.schemas.Persona").doesNotExist())
+                        .andExpect(jsonPath("$.components.schemas.PersonaId").doesNotExist())
+                        .andReturn();
+
+        String spec = result.getResponse().getContentAsString();
+        List<Map<String, Object>> queryParameters =
+                JsonPath.read(spec, "$.paths.*.*.parameters[?(@.in == 'query')]");
+        assertThat(queryParameters)
+                .extracting(param -> param.get("name"))
+                .containsOnly("username", "dni", "password", "pageable");
     }
 
     @Test
     void allowsCorsFromTheLocalFrontEnd() throws Exception {
         mvc.perform(
-                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options(
-                                        "/api/v1/families")
+                        options("/api/v1/families")
                                 .header("Origin", "http://localhost:5173")
                                 .header("Access-Control-Request-Method", "POST"))
                 .andExpect(status().isOk())
@@ -847,8 +926,6 @@ class ApiIntegrationTest {
                                 .header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("not-found"));
-
-        assertThat(context.containsBean("legacyFamilyController")).isFalse();
     }
 
     private MockMultipartFile photo(String part, String contentType, byte fill) {
@@ -929,6 +1006,6 @@ class ApiIntegrationTest {
     }
 
     private UUID adminOf(UUID familyId) {
-        return families.findById(familyId).orElseThrow().getAdmin().getId();
+        return families.findById(familyId).orElseThrow().getAdminId();
     }
 }

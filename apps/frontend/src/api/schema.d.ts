@@ -288,17 +288,6 @@ export interface components {
             frontPhotoUrl?: string | null;
             backPhotoUrl?: string | null;
         };
-        Persona: {
-            /** Format: uuid */
-            id?: string;
-            username?: string;
-            dni?: string;
-            passwordHash?: string;
-            frontPhotoKey?: string;
-            frontPhotoContentType?: string;
-            backPhotoKey?: string;
-            backPhotoContentType?: string;
-        };
         RedemptionResponse: {
             /** Format: uuid */
             familyId?: string;
@@ -472,9 +461,7 @@ export interface operations {
     };
     redeem: {
         parameters: {
-            query: {
-                persona: components["schemas"]["Persona"];
-            };
+            query?: never;
             header?: never;
             path: {
                 code: string;
@@ -496,9 +483,7 @@ export interface operations {
     };
     create: {
         parameters: {
-            query: {
-                creator: components["schemas"]["Persona"];
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -522,9 +507,7 @@ export interface operations {
     };
     issueInvite: {
         parameters: {
-            query: {
-                actor: components["schemas"]["Persona"];
-            };
+            query?: never;
             header?: never;
             path: {
                 familyId: string;
@@ -570,9 +553,7 @@ export interface operations {
     };
     me: {
         parameters: {
-            query: {
-                persona: components["schemas"]["Persona"];
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -592,9 +573,7 @@ export interface operations {
     };
     myFrontPhoto: {
         parameters: {
-            query: {
-                persona: components["schemas"]["Persona"];
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -614,9 +593,7 @@ export interface operations {
     };
     myBackPhoto: {
         parameters: {
-            query: {
-                persona: components["schemas"]["Persona"];
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
@@ -637,7 +614,6 @@ export interface operations {
     mine: {
         parameters: {
             query: {
-                persona: components["schemas"]["Persona"];
                 pageable: components["schemas"]["Pageable"];
             };
             header?: never;
@@ -659,9 +635,7 @@ export interface operations {
     };
     get: {
         parameters: {
-            query: {
-                viewer: components["schemas"]["Persona"];
-            };
+            query?: never;
             header?: never;
             path: {
                 familyId: string;
@@ -684,7 +658,6 @@ export interface operations {
     members: {
         parameters: {
             query: {
-                viewer: components["schemas"]["Persona"];
                 pageable: components["schemas"]["Pageable"];
             };
             header?: never;
@@ -708,9 +681,7 @@ export interface operations {
     };
     dni: {
         parameters: {
-            query: {
-                viewer: components["schemas"]["Persona"];
-            };
+            query?: never;
             header?: never;
             path: {
                 familyId: string;
@@ -733,9 +704,7 @@ export interface operations {
     };
     frontPhoto: {
         parameters: {
-            query: {
-                viewer: components["schemas"]["Persona"];
-            };
+            query?: never;
             header?: never;
             path: {
                 familyId: string;
@@ -758,9 +727,7 @@ export interface operations {
     };
     backPhoto: {
         parameters: {
-            query: {
-                viewer: components["schemas"]["Persona"];
-            };
+            query?: never;
             header?: never;
             path: {
                 familyId: string;
@@ -783,9 +750,7 @@ export interface operations {
     };
     removeMember: {
         parameters: {
-            query: {
-                actor: components["schemas"]["Persona"];
-            };
+            query?: never;
             header?: never;
             path: {
                 familyId: string;
@@ -806,9 +771,7 @@ export interface operations {
     };
     revokeConsent: {
         parameters: {
-            query: {
-                actor: components["schemas"]["Persona"];
-            };
+            query?: never;
             header?: never;
             path: {
                 familyId: string;

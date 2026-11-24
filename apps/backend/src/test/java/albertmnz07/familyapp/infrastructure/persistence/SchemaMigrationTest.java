@@ -1,4 +1,4 @@
-package albertmnz07.familyapp.legacy.family;
+package albertmnz07.familyapp.infrastructure.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
