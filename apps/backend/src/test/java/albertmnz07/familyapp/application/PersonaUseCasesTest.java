@@ -34,7 +34,9 @@ import albertmnz07.familyapp.domain.valueobject.RawPhoto;
 import albertmnz07.familyapp.domain.valueobject.TokenValue;
 import albertmnz07.familyapp.domain.valueobject.Username;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -56,6 +58,13 @@ class PersonaUseCasesTest {
 
                 public Optional<Persona> findById(PersonaId id) {
                     return Optional.ofNullable(personaStore.get(id));
+                }
+
+                public List<Persona> findAllByIds(Collection<PersonaId> ids) {
+                    return ids.stream()
+                            .map(personaStore::get)
+                            .filter(java.util.Objects::nonNull)
+                            .toList();
                 }
 
                 public Optional<Persona> findByUsername(Username username) {

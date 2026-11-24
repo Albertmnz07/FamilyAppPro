@@ -1,5 +1,6 @@
 package albertmnz07.familyapp.domain.model;
 
+import albertmnz07.familyapp.domain.exception.CannotRemoveAdminException;
 import albertmnz07.familyapp.domain.exception.ForbiddenException;
 import albertmnz07.familyapp.domain.valueobject.FamilyId;
 import albertmnz07.familyapp.domain.valueobject.FamilyName;
@@ -36,6 +37,13 @@ public final class Family {
     public void requireAdmin(PersonaId personaId) {
         if (!isAdmin(personaId)) {
             throw new ForbiddenException("Only the family admin can perform this action");
+        }
+    }
+
+    /** Refuses removing the family admin with {@code cannot-remove-admin}. */
+    public void requireRemovable(PersonaId personaId) {
+        if (isAdmin(personaId)) {
+            throw new CannotRemoveAdminException("Cannot remove the family admin");
         }
     }
 

@@ -14,6 +14,10 @@ import albertmnz07.familyapp.application.command.RedeemInviteCommandHandler;
 import albertmnz07.familyapp.application.command.RedeemInviteResult;
 import albertmnz07.familyapp.application.command.RegisterPersonaCommand;
 import albertmnz07.familyapp.application.command.RegisterPersonaCommandHandler;
+import albertmnz07.familyapp.application.command.RemoveMemberCommand;
+import albertmnz07.familyapp.application.command.RemoveMemberCommandHandler;
+import albertmnz07.familyapp.application.command.RevokeConsentCommand;
+import albertmnz07.familyapp.application.command.RevokeConsentCommandHandler;
 import albertmnz07.familyapp.application.command.UpdateDniPhotosCommand;
 import albertmnz07.familyapp.application.command.UpdateDniPhotosCommandHandler;
 import albertmnz07.familyapp.application.port.Clock;
@@ -26,12 +30,20 @@ import albertmnz07.familyapp.application.query.DniPhotoView;
 import albertmnz07.familyapp.application.query.FamilyView;
 import albertmnz07.familyapp.application.query.GetFamilyQuery;
 import albertmnz07.familyapp.application.query.GetFamilyQueryHandler;
+import albertmnz07.familyapp.application.query.GetMemberDniPhotoQuery;
+import albertmnz07.familyapp.application.query.GetMemberDniPhotoQueryHandler;
+import albertmnz07.familyapp.application.query.GetMemberDniQuery;
+import albertmnz07.familyapp.application.query.GetMemberDniQueryHandler;
 import albertmnz07.familyapp.application.query.GetMyDniPhotoQuery;
 import albertmnz07.familyapp.application.query.GetMyDniPhotoQueryHandler;
 import albertmnz07.familyapp.application.query.GetMyPersonaQuery;
 import albertmnz07.familyapp.application.query.GetMyPersonaQueryHandler;
+import albertmnz07.familyapp.application.query.ListFamilyMembersQuery;
+import albertmnz07.familyapp.application.query.ListFamilyMembersQueryHandler;
 import albertmnz07.familyapp.application.query.ListMyFamiliesQuery;
 import albertmnz07.familyapp.application.query.ListMyFamiliesQueryHandler;
+import albertmnz07.familyapp.application.query.MemberDniView;
+import albertmnz07.familyapp.application.query.MemberView;
 import albertmnz07.familyapp.application.query.PagedResult;
 import albertmnz07.familyapp.application.query.PersonaView;
 import albertmnz07.familyapp.application.query.QueryHandler;
@@ -129,6 +141,26 @@ public class UseCaseConfig {
     }
 
     @Bean
+    CommandHandler<RemoveMemberCommand, Void> removeMember(
+            FamilyRepository families,
+            MembershipRepository memberships,
+            Clock clock,
+            PlatformTransactionManager transactions) {
+        return transactional(
+                new RemoveMemberCommandHandler(families, memberships, clock), transactions);
+    }
+
+    @Bean
+    CommandHandler<RevokeConsentCommand, Void> revokeConsent(
+            FamilyRepository families,
+            MembershipRepository memberships,
+            Clock clock,
+            PlatformTransactionManager transactions) {
+        return transactional(
+                new RevokeConsentCommandHandler(families, memberships, clock), transactions);
+    }
+
+    @Bean
     QueryHandler<AuthenticateTokenQuery, PersonaId> authenticateToken(
             AuthTokenRepository tokens, Clock clock, PlatformTransactionManager transactions) {
         return readOnly(new AuthenticateTokenQueryHandler(tokens, clock), transactions);
@@ -162,6 +194,38 @@ public class UseCaseConfig {
             FamilyRepository families,
             PlatformTransactionManager transactions) {
         return readOnly(new ListMyFamiliesQueryHandler(memberships, families), transactions);
+    }
+
+    @Bean
+    QueryHandler<ListFamilyMembersQuery, PagedResult<MemberView>> listFamilyMembers(
+            FamilyRepository families,
+            MembershipRepository memberships,
+            PersonaRepository personas,
+            PlatformTransactionManager transactions) {
+        return readOnly(
+                new ListFamilyMembersQueryHandler(families, memberships, personas), transactions);
+    }
+
+    @Bean
+    QueryHandler<GetMemberDniQuery, MemberDniView> getMemberDni(
+            FamilyRepository families,
+            MembershipRepository memberships,
+            PersonaRepository personas,
+            PlatformTransactionManager transactions) {
+        return readOnly(
+                new GetMemberDniQueryHandler(families, memberships, personas), transactions);
+    }
+
+    @Bean
+    QueryHandler<GetMemberDniPhotoQuery, DniPhotoView> getMemberDniPhoto(
+            FamilyRepository families,
+            MembershipRepository memberships,
+            PersonaRepository personas,
+            PhotoStore photos,
+            PlatformTransactionManager transactions) {
+        return readOnly(
+                new GetMemberDniPhotoQueryHandler(families, memberships, personas, photos),
+                transactions);
     }
 
     private static <C, R> CommandHandler<C, R> transactional(

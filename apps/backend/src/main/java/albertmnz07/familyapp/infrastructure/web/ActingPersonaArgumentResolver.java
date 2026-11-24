@@ -4,8 +4,6 @@ import albertmnz07.familyapp.application.query.AuthenticateTokenQuery;
 import albertmnz07.familyapp.application.query.QueryHandler;
 import albertmnz07.familyapp.domain.exception.UnauthorizedException;
 import albertmnz07.familyapp.domain.valueobject.PersonaId;
-import albertmnz07.familyapp.legacy.family.Persona;
-import albertmnz07.familyapp.legacy.family.PersonaRepository;
 import org.springframework.core.MethodParameter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.support.WebDataBinderFactory;
@@ -13,11 +11,7 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
-/**
- * Resolves {@code @ActingPersona} parameters from the bearer token. A {@link PersonaId} parameter
- * is the migrated form; the legacy {@link Persona} entity is still supported transitionally for
- * controllers not yet migrated.
- */
+/** Resolves {@code @ActingPersona} {@link PersonaId} parameters from the bearer token. */
 @Component
 public class ActingPersonaArgumentResolver implements HandlerMethodArgumentResolver {
 
@@ -25,20 +19,16 @@ public class ActingPersonaArgumentResolver implements HandlerMethodArgumentResol
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final QueryHandler<AuthenticateTokenQuery, PersonaId> authenticate;
-    private final PersonaRepository legacyPersonas;
 
     public ActingPersonaArgumentResolver(
-            QueryHandler<AuthenticateTokenQuery, PersonaId> authenticate,
-            PersonaRepository legacyPersonas) {
+            QueryHandler<AuthenticateTokenQuery, PersonaId> authenticate) {
         this.authenticate = authenticate;
-        this.legacyPersonas = legacyPersonas;
     }
 
     @Override
     public boolean supportsParameter(MethodParameter parameter) {
         return parameter.hasParameterAnnotation(ActingPersona.class)
-                && (PersonaId.class.equals(parameter.getParameterType())
-                        || Persona.class.equals(parameter.getParameterType()));
+                && PersonaId.class.equals(parameter.getParameterType());
     }
 
     @Override
@@ -47,13 +37,7 @@ public class ActingPersonaArgumentResolver implements HandlerMethodArgumentResol
             ModelAndViewContainer mavContainer,
             NativeWebRequest webRequest,
             WebDataBinderFactory binderFactory) {
-        PersonaId id = authenticate.handle(new AuthenticateTokenQuery(bearerToken(webRequest)));
-        if (PersonaId.class.equals(parameter.getParameterType())) {
-            return id;
-        }
-        return legacyPersonas
-                .findById(id.value())
-                .orElseThrow(() -> new UnauthorizedException("Unknown token"));
+        return authenticate.handle(new AuthenticateTokenQuery(bearerToken(webRequest)));
     }
 
     private static String bearerToken(NativeWebRequest webRequest) {

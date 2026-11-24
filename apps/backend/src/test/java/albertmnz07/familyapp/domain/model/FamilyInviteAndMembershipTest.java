@@ -4,16 +4,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import albertmnz07.familyapp.domain.exception.CannotRemoveAdminException;
 import albertmnz07.familyapp.domain.exception.ForbiddenException;
 import albertmnz07.familyapp.domain.exception.InvalidValueException;
 import albertmnz07.familyapp.domain.exception.InviteAlreadyRedeemedException;
 import albertmnz07.familyapp.domain.exception.InviteExpiredException;
 import albertmnz07.familyapp.domain.valueobject.ConsentId;
+import albertmnz07.familyapp.domain.valueobject.Dni;
+import albertmnz07.familyapp.domain.valueobject.DniNumber;
+import albertmnz07.familyapp.domain.valueobject.DniPhoto;
 import albertmnz07.familyapp.domain.valueobject.FamilyId;
 import albertmnz07.familyapp.domain.valueobject.FamilyName;
 import albertmnz07.familyapp.domain.valueobject.InviteCode;
 import albertmnz07.familyapp.domain.valueobject.MembershipId;
 import albertmnz07.familyapp.domain.valueobject.PersonaId;
+import albertmnz07.familyapp.domain.valueobject.PhotoContentType;
+import albertmnz07.familyapp.domain.valueobject.PhotoKey;
 import java.time.Duration;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
@@ -121,5 +127,43 @@ class FamilyInviteAndMembershipTest {
                                 Membership.Status.REMOVED,
                                 activeConsent))
                 .isInstanceOf(InvalidValueException.class);
+    }
+
+    @Test
+    void theFamilyAdminCannotBeRemovedWhileOrdinaryMembersCan() {
+        PersonaId adminId = PersonaId.generate();
+        PersonaId memberId = PersonaId.generate();
+        Family family = Family.create(FamilyName.of("Familia García"), adminId);
+
+        assertThatThrownBy(() -> family.requireRemovable(adminId))
+                .isInstanceOf(CannotRemoveAdminException.class);
+        assertThatCode(() -> family.requireRemovable(memberId)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void dniVisibilityFollowsPerFamilyAcceptedMembershipAndConsentInForce() {
+        PersonaId personaId = PersonaId.generate();
+        Dni dni =
+                new Dni(
+                        DniNumber.of("12345678z"),
+                        new DniPhoto(new PhotoKey("front-1"), PhotoContentType.of("image/jpeg")),
+                        null);
+
+        Membership familyAMembership = Membership.acceptNew(FamilyId.generate(), personaId, NOW);
+        Membership familyBMembership = Membership.acceptNew(FamilyId.generate(), personaId, NOW);
+
+        assertThat(familyAMembership.visibleDni(dni)).contains(dni);
+        assertThat(familyBMembership.visibleDni(dni)).contains(dni);
+
+        familyAMembership.revokeConsent(NOW.plusSeconds(10));
+        assertThat(familyAMembership.visibleDni(dni)).isEmpty();
+        assertThat(familyBMembership.visibleDni(dni)).contains(dni);
+
+        familyAMembership.accept(NOW.plusSeconds(20));
+        assertThat(familyAMembership.visibleDni(dni)).contains(dni);
+
+        familyAMembership.remove(NOW.plusSeconds(30));
+        assertThat(familyAMembership.visibleDni(dni)).isEmpty();
+        assertThat(familyBMembership.visibleDni(dni)).contains(dni);
     }
 }

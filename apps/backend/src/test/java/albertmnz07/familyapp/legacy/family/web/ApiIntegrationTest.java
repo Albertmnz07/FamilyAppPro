@@ -62,6 +62,8 @@ class ApiIntegrationTest {
 
     @Autowired AuthTokenJpaRepository tokens;
 
+    @Autowired org.springframework.context.ApplicationContext context;
+
     @AfterEach
     void cleanUp() {
         tokens.deleteAll();
@@ -738,6 +740,115 @@ class ApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:5173"))
                 .andExpect(header().string("Access-Control-Allow-Methods", containsString("PUT")));
+    }
+
+    @Test
+    void streamsMemberDniPhotosWhileConsentIsInForceAndBlocksThemAfterRevocation()
+            throws Exception {
+        registerPersona(ADMIN_DNI);
+        UUID familyId = createFamily(ADMIN_DNI, "Familia García");
+        UUID memberId = joinFamily(familyId, MEMBER_DNI);
+        byte[] frontBytes = {7, 8, 9};
+        byte[] backBytes = {4, 5, 6};
+
+        mvc.perform(
+                        multipart(HttpMethod.PUT, PHOTOS_PATH)
+                                .header(AUTH, bearer(MEMBER_DNI))
+                                .file(
+                                        new MockMultipartFile(
+                                                "frontPhoto",
+                                                "front.jpg",
+                                                "image/jpeg",
+                                                frontBytes))
+                                .file(
+                                        new MockMultipartFile(
+                                                "backPhoto", "back.png", "image/png", backBytes)))
+                .andExpect(status().isOk());
+
+        String base = "/api/v1/families/" + familyId + "/members/" + memberId + "/dni";
+        mvc.perform(get(base).header(AUTH, bearer(ADMIN_DNI)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.personaId").value(memberId.toString()))
+                .andExpect(jsonPath("$.number").value(MEMBER_DNI))
+                .andExpect(jsonPath("$.frontPhotoUrl").value(base + "/front"))
+                .andExpect(jsonPath("$.backPhotoUrl").value(base + "/back"));
+
+        MvcResult front =
+                mvc.perform(get(base + "/front").header(AUTH, bearer(ADMIN_DNI)))
+                        .andExpect(status().isOk())
+                        .andExpect(header().string("Content-Type", "image/jpeg"))
+                        .andExpect(header().string("Cache-Control", containsString("no-store")))
+                        .andReturn();
+        assertThat(front.getResponse().getContentAsByteArray()).isEqualTo(frontBytes);
+
+        MvcResult back =
+                mvc.perform(get(base + "/back").header(AUTH, bearer(ADMIN_DNI)))
+                        .andExpect(status().isOk())
+                        .andExpect(header().string("Content-Type", "image/png"))
+                        .andReturn();
+        assertThat(back.getResponse().getContentAsByteArray()).isEqualTo(backBytes);
+
+        mvc.perform(
+                        delete("/api/v1/families/" + familyId + "/members/" + memberId + "/consent")
+                                .header(AUTH, bearer(MEMBER_DNI)))
+                .andExpect(status().isNoContent());
+
+        mvc.perform(get(base + "/front").header(AUTH, bearer(ADMIN_DNI)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("forbidden"));
+        mvc.perform(get(base + "/back").header(AUTH, bearer(ADMIN_DNI)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("forbidden"));
+    }
+
+    @Test
+    void revokingConsentInOneFamilyLeavesConsentInOtherFamiliesInForce() throws Exception {
+        registerPersona(ADMIN_DNI);
+        UUID familyA = createFamily(ADMIN_DNI, "Familia A");
+        UUID memberId = joinFamily(familyA, MEMBER_DNI);
+
+        registerPersona(OUTSIDER_DNI);
+        UUID familyB = createFamily(OUTSIDER_DNI, "Familia B");
+        String codeB = issueInvite(OUTSIDER_DNI, familyB);
+        redeem(codeB, MEMBER_DNI);
+
+        mvc.perform(
+                        delete("/api/v1/families/" + familyA + "/members/" + memberId + "/consent")
+                                .header(AUTH, bearer(MEMBER_DNI)))
+                .andExpect(status().isNoContent());
+
+        mvc.perform(
+                        get("/api/v1/families/" + familyA + "/members/" + memberId + "/dni")
+                                .header(AUTH, bearer(ADMIN_DNI)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("forbidden"));
+        mvc.perform(
+                        get("/api/v1/families/" + familyB + "/members/" + memberId + "/dni")
+                                .header(AUTH, bearer(OUTSIDER_DNI)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.number").value(MEMBER_DNI));
+    }
+
+    @Test
+    void nonAdminsCannotRemoveMembersAndMissingMembersReturnNotFound() throws Exception {
+        UUID adminId = registerPersona(ADMIN_DNI);
+        UUID familyId = createFamily(ADMIN_DNI, "Familia García");
+        joinFamily(familyId, MEMBER_DNI);
+        UUID outsiderId = registerPersona(OUTSIDER_DNI);
+
+        mvc.perform(
+                        delete("/api/v1/families/" + familyId + "/members/" + adminId)
+                                .header(AUTH, bearer(MEMBER_DNI)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("forbidden"));
+
+        mvc.perform(
+                        delete("/api/v1/families/" + familyId + "/members/" + outsiderId)
+                                .header(AUTH, bearer(ADMIN_DNI)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("not-found"));
+
+        assertThat(context.containsBean("legacyFamilyController")).isFalse();
     }
 
     private MockMultipartFile photo(String part, String contentType, byte fill) {

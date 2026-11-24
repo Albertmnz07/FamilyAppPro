@@ -1,11 +1,13 @@
 package albertmnz07.familyapp.domain.model;
 
 import albertmnz07.familyapp.domain.exception.InvalidValueException;
+import albertmnz07.familyapp.domain.valueobject.Dni;
 import albertmnz07.familyapp.domain.valueobject.FamilyId;
 import albertmnz07.familyapp.domain.valueobject.MembershipId;
 import albertmnz07.familyapp.domain.valueobject.PersonaId;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Aggregate Root: the link between a persona and a family, encapsulating {@link Consent} so
@@ -81,6 +83,12 @@ public final class Membership {
 
     public boolean isConsentInForce() {
         return isAccepted() && consent.isInForce();
+    }
+
+    /** Returns {@code dni} only while this membership is accepted and consent is in force. */
+    public Optional<Dni> visibleDni(Dni dni) {
+        Objects.requireNonNull(dni, "dni");
+        return isConsentInForce() ? Optional.of(dni) : Optional.empty();
     }
 
     public MembershipId id() {

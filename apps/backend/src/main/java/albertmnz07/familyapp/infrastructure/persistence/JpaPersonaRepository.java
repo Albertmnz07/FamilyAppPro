@@ -10,6 +10,8 @@ import albertmnz07.familyapp.domain.valueobject.PersonaId;
 import albertmnz07.familyapp.domain.valueobject.PhotoContentType;
 import albertmnz07.familyapp.domain.valueobject.PhotoKey;
 import albertmnz07.familyapp.domain.valueobject.Username;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Repository;
 
@@ -30,6 +32,16 @@ public class JpaPersonaRepository implements PersonaRepository {
     @Override
     public Optional<Persona> findById(PersonaId id) {
         return jpa.findById(id.value()).map(JpaPersonaRepository::toDomain);
+    }
+
+    @Override
+    public List<Persona> findAllByIds(Collection<PersonaId> ids) {
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        return jpa.findAllById(ids.stream().map(PersonaId::value).toList()).stream()
+                .map(JpaPersonaRepository::toDomain)
+                .toList();
     }
 
     @Override

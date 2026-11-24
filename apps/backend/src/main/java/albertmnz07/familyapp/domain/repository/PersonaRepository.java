@@ -4,6 +4,8 @@ import albertmnz07.familyapp.domain.model.Persona;
 import albertmnz07.familyapp.domain.valueobject.DniNumber;
 import albertmnz07.familyapp.domain.valueobject.PersonaId;
 import albertmnz07.familyapp.domain.valueobject.Username;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface PersonaRepository {
@@ -11,6 +13,8 @@ public interface PersonaRepository {
     Persona save(Persona persona);
 
     Optional<Persona> findById(PersonaId id);
+
+    List<Persona> findAllByIds(Collection<PersonaId> ids);
 
     Optional<Persona> findByUsername(Username username);
 
