@@ -1,5 +1,6 @@
 package albertmnz07.familyapp.legacy.family.web;
 
+import albertmnz07.familyapp.infrastructure.web.ActingPersona;
 import albertmnz07.familyapp.legacy.family.FamilyService;
 import albertmnz07.familyapp.legacy.family.Membership;
 import albertmnz07.familyapp.legacy.family.Persona;

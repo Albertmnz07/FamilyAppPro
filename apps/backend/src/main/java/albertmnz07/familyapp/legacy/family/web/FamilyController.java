@@ -1,16 +1,20 @@
 package albertmnz07.familyapp.legacy.family.web;
 
+import albertmnz07.familyapp.application.port.PhotoStore;
+import albertmnz07.familyapp.domain.valueobject.PhotoKey;
+import albertmnz07.familyapp.infrastructure.web.ActingPersona;
+import albertmnz07.familyapp.infrastructure.web.PhotoResponses;
 import albertmnz07.familyapp.legacy.family.Dni;
 import albertmnz07.familyapp.legacy.family.Family;
 import albertmnz07.familyapp.legacy.family.FamilyService;
 import albertmnz07.familyapp.legacy.family.Invite;
 import albertmnz07.familyapp.legacy.family.Persona;
-import albertmnz07.familyapp.legacy.family.PersonaService;
+import albertmnz07.familyapp.legacy.family.PersonaRepository;
 import albertmnz07.familyapp.legacy.family.error.ForbiddenException;
 import albertmnz07.familyapp.legacy.family.error.NotFoundException;
-import albertmnz07.familyapp.legacy.family.photo.PhotoStore;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -32,10 +36,10 @@ import org.springframework.web.bind.annotation.RestController;
 public class FamilyController {
 
     private final FamilyService families;
-    private final PersonaService personas;
+    private final PersonaRepository personas;
     private final PhotoStore photos;
 
-    public FamilyController(FamilyService families, PersonaService personas, PhotoStore photos) {
+    public FamilyController(FamilyService families, PersonaRepository personas, PhotoStore photos) {
         this.families = families;
         this.personas = personas;
         this.photos = photos;
@@ -92,7 +96,7 @@ public class FamilyController {
             @PathVariable UUID personaId) {
         Family family = families.getFamily(familyId);
         families.requireAdmin(family, actor);
-        Persona target = personas.find(personaId);
+        Persona target = findPersona(personaId);
         if (!families.isAcceptedMember(family, target)) {
             throw new NotFoundException("Member not found in family: " + personaId);
         }
@@ -127,7 +131,7 @@ public class FamilyController {
             @PathVariable UUID familyId,
             @PathVariable UUID personaId) {
         Dni dni = requireVisibleDni(familyId, viewer, personaId);
-        return photos.get(dni.frontPhotoKey())
+        return photoBytes(dni.frontPhotoKey())
                 .map(photo -> PhotoResponses.of(photo, dni.frontPhotoContentType()))
                 .orElseThrow(() -> new NotFoundException("Front photo not found"));
     }
@@ -138,7 +142,7 @@ public class FamilyController {
             @PathVariable UUID familyId,
             @PathVariable UUID personaId) {
         Dni dni = requireVisibleDni(familyId, viewer, personaId);
-        return photos.get(dni.backPhotoKey())
+        return photoBytes(dni.backPhotoKey())
                 .map(photo -> PhotoResponses.of(photo, dni.backPhotoContentType()))
                 .orElseThrow(() -> new NotFoundException("Back photo not found"));
     }
@@ -146,12 +150,24 @@ public class FamilyController {
     private Dni requireVisibleDni(UUID familyId, Persona viewer, UUID personaId) {
         Family family = families.getFamily(familyId);
         families.requireAcceptedMember(family, viewer);
-        Persona target = personas.find(personaId);
+        Persona target = findPersona(personaId);
         if (!families.isAcceptedMember(family, target)) {
             throw new NotFoundException("Member not found in family: " + personaId);
         }
         return families.visibleDni(family, viewer, target)
                 .orElseThrow(
                         () -> new ForbiddenException("Consent is not in force for this persona"));
+    }
+
+    private Persona findPersona(UUID id) {
+        return personas.findById(id)
+                .orElseThrow(() -> new NotFoundException("Persona not found: " + id));
+    }
+
+    private Optional<byte[]> photoBytes(String key) {
+        if (key == null || key.isBlank()) {
+            return Optional.empty();
+        }
+        return photos.get(new PhotoKey(key));
     }
 }

@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import albertmnz07.familyapp.infrastructure.persistence.AuthTokenJpaRepository;
 import albertmnz07.familyapp.legacy.family.ConsentRepository;
 import albertmnz07.familyapp.legacy.family.Family;
 import albertmnz07.familyapp.legacy.family.FamilyRepository;
@@ -20,7 +21,6 @@ import albertmnz07.familyapp.legacy.family.InviteRepository;
 import albertmnz07.familyapp.legacy.family.MembershipRepository;
 import albertmnz07.familyapp.legacy.family.Persona;
 import albertmnz07.familyapp.legacy.family.PersonaRepository;
-import albertmnz07.familyapp.legacy.family.auth.AuthTokenRepository;
 import com.jayway.jsonpath.JsonPath;
 import java.time.Instant;
 import java.util.UUID;
@@ -60,7 +60,7 @@ class ApiIntegrationTest {
 
     @Autowired ConsentRepository consents;
 
-    @Autowired AuthTokenRepository tokens;
+    @Autowired AuthTokenJpaRepository tokens;
 
     @AfterEach
     void cleanUp() {
