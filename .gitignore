@@ -1,3 +1,4 @@
+apps/backend/target/
 target/
 .idea/
 *.iml

@@ -1,6 +1,6 @@
 # Guía de uso
 
-Instrucciones para arrancar FamilyAppPro con Docker y recorrer el circuito completo (registro, familia, invitación, consentimiento y fotos del DNI). Es un complemento práctico del README; el detalle de decisiones está en [ADR-0008](adr/0008-containerized-deployment.md) y [ADR-0006](adr/0006-frontend-location-and-api-base-url.md).
+Instrucciones para arrancar FamilyAppPro con Docker y recorrer el circuito completo (registro, familia, invitación, consentimiento y fotos del DNI). Es un complemento práctico del [README](../README.md); el código vive bajo `apps/backend` (API Spring Boot con arquitectura hexagonal) y `apps/frontend` (SPA React + TypeScript + Vite), mientras que la orquestación (`Makefile`, `Dockerfile`, `compose.*.yml`) se ejecuta desde la raíz del repositorio ([ADR-0010](adr/0010-hexagonal-backend-architecture.md), [ADR-0008](adr/0008-containerized-deployment.md) y [ADR-0006](adr/0006-frontend-location-and-api-base-url.md)).
 
 ## Requisitos
 
@@ -36,19 +36,27 @@ La raíz incluye un [`Makefile`](../Makefile) que reúne estos comandos. Ejecuta
 
 | Comando | Efecto |
 | --- | --- |
+| `make setup` | activa los git hooks de `.githooks/` en este clon (una vez) |
 | `make dev` | arranca el stack de desarrollo y sigue los logs |
 | `make dev-detached` | arranca el stack de desarrollo en segundo plano |
 | `make dev-down` | para el stack de desarrollo (conserva los datos) |
-| `make dev-restart` | reinicia la API para recompilar los cambios en Java |
+| `make dev-restart` | reinicia la API para recompilar los cambios en `apps/backend` |
+| `make dev-logs` | sigue los logs del stack de desarrollo |
 | `make prod` | reconstruye y redespliega los servicios de producción modificados (`up -d --build`) |
 | `make prod-start` | arranca el stack de producción sin reconstruir imágenes (`up -d --no-build`) |
 | `make prod-rebuild` | fuerza una reconstrucción completa de la imagen de la API (`build --no-cache api` + `up -d`) |
 | `make prod-down` | para el stack de producción (conserva los datos) |
+| `make prod-logs` | sigue los logs de la API en producción |
 | `make db-reset-dev` | recrea la base de datos de desarrollo desde cero |
 | `make db-reset-prod` | recrea la base de datos de producción desde cero |
-| `make test` | suites de backend y front-end |
-| `make build` | construye el artefacto único con el front-end dentro |
-| `make run` | construye el artefacto y lo ejecuta en <http://localhost:8070> |
+| `make test` | ejecuta las suites de `apps/backend` y `apps/frontend` |
+| `make test-backend` | ejecuta la suite del back-end (`cd apps/backend && ./mvnw test`) |
+| `make test-frontend` / `make check` | ejecuta typecheck, lint y tests del front-end (`npm --prefix apps/frontend run check`) |
+| `make format` | aplica Spotless (`apps/backend`) y Prettier (`apps/frontend`) |
+| `make format-check` | verifica el formato sin modificar archivos |
+| `make build` | construye el JAR único en `apps/backend/target/` con `apps/frontend/dist` integrado |
+| `make run` | construye el artefacto único y lo ejecuta en <http://localhost:8070> |
+| `make clean` | elimina `apps/backend/target` y `apps/frontend/dist` |
 
 Los `up` de producción recrean solo los servicios cuya imagen o configuración cambió, así no se acumulan contenedores viejos. Los resets hacen `down -v`, que **borra el volumen `pgdata`** pero deja `./data/photos` intacto.
 
@@ -112,6 +120,6 @@ curl -fsS http://localhost:8070/v3/api-docs >/dev/null && echo "API OK"
 docker compose -f compose.dev.yml ps
 ```
 
-Con las herramientas locales instaladas, las suites completas se ejecutan con `./mvnw test` y `npm --prefix frontend run check`.
+Con las herramientas locales instaladas, las suites completas se ejecutan con `make test` — o por separado con `(cd apps/backend && ./mvnw test)` y `npm --prefix apps/frontend run check` (`make check`). Si cambia el contrato REST de la API, con el back-end escuchando en `http://localhost:8070` actualiza la instantánea OpenAPI y los tipos generados con `npm --prefix apps/frontend run api:refresh` ([ADR-0005](adr/0005-openapi-snapshot-as-frontend-contract.md)).
 
 **Limitación conocida:** no hay SPA fallback. Entra en `http://localhost:8070` y navega desde la app; recargar directamente una ruta como `/families/{id}` devuelve 404.

@@ -8,11 +8,35 @@ The user interface is in Spanish.
 
 | Tool | Version | Needed for |
 | --- | --- | --- |
-| Java | 21 | API, build and tests |
+| Java | 21 | API (`apps/backend`), build and tests |
 | PostgreSQL | any recent version, listening on `localhost:5432` | the database |
-| Node.js + npm | 22.12 or newer | building the front-end, its tests, front-end development |
+| Node.js + npm | 22.12 or newer | building `apps/frontend`, its tests, front-end development |
 
 For the containerized path below, Docker (Engine plus the Compose plugin), `make` and git are enough — no local Java, PostgreSQL or Node.
+
+## Project structure
+
+Application code lives under `apps/`, separated from repository-wide orchestration, hooks, and documentation ([ADR-0010](docs/adr/0010-hexagonal-backend-architecture.md)):
+
+```
+FamilyAppPro/
+├── apps/
+│   ├── backend/         # Spring Boot API (albertmnz07.familyapp), Maven wrapper, Flyway SQL
+│   └── frontend/        # React + TypeScript + Vite SPA, OpenAPI snapshot & generated types
+├── db/bootstrap.sql     # one-time local PostgreSQL role/database bootstrap
+├── docs/                # ADRs (docs/adr/) and Spanish usage guide (docs/usage.md)
+├── .githooks/           # pre-commit & pre-push formatting/check hooks (make setup)
+├── compose.dev.yml      # dev stack: PostgreSQL + API (spring-boot:run) + Vite (port 5173/8070)
+├── compose.prod.yml     # prod stack: PostgreSQL + single-artifact runtime image (port 8070)
+├── Dockerfile           # multi-stage back-end/single-artifact image (dev and runtime targets)
+└── Makefile             # day-to-day developer commands across both apps and stacks
+```
+
+Inside `apps/backend`, `albertmnz07.familyapp` follows a strict Hexagonal Architecture enforced by `HexagonalArchitectureTest`:
+
+- **`domain`** (`model`, `valueobject`, `repository`, `exception`) — framework-free Aggregates (`Persona`, `Family`, `Membership` encapsulating `Consent`, `Invite`, `AuthToken`), Value Objects, repository interfaces, and `DomainException` types.
+- **`application`** (`command`, `query`, `port`) — framework-free `*Command`/`*CommandHandler` mutations, `*Query`/`*QueryHandler` reads, and outbound ports (`PhotoStore`, `PasswordHasher`, `InviteCodeGenerator`, `Clock`).
+- **`infrastructure`** (`persistence`, `storage`, `security`, `web`, `config`) — JPA entities/adapters, local photo store, PBKDF2/random adapters, transactional bean wiring (`UseCaseConfig`), and REST controllers/DTOs.
 
 ## Deploy with Docker
 
@@ -80,7 +104,7 @@ rm -rf data/photos
 make run
 ```
 
-`make run` builds the artifact (`make build`, i.e. `./mvnw package`) and starts the jar:
+`make run` builds the artifact (`make build`, i.e. `(cd apps/backend && ./mvnw package)`) and starts the jar (`make clean` removes `apps/backend/target` and `apps/frontend/dist`):
 
 ```bash
 (cd apps/backend && ./mvnw package)
@@ -89,7 +113,7 @@ java -jar apps/backend/target/familyapp-0.0.1-SNAPSHOT.jar
 
 Then open <http://localhost:8070>.
 
-The `package` phase runs `npm ci` and `npm run build` inside `apps/frontend/` and copies `apps/frontend/dist` into the jar's static resources, so the one process serves both the app and the API at the same origin — no second server and no CORS involved. Building the artifact requires npm on the build machine; `./mvnw test` does not.
+The `package` phase runs `npm ci` and `npm run build` inside `apps/frontend/` and copies `apps/frontend/dist` into the jar's static resources, so the one process serves both the app and the API at the same origin — no second server and no CORS involved. Building the artifact requires npm on the build machine; `make test-backend` (`(cd apps/backend && ./mvnw test)`) does not.
 
 ### Run the front-end in development (optional)
 
@@ -100,7 +124,7 @@ Two processes, with Vite serving the app and proxying nothing — the front-end 
 (cd apps/backend && ./mvnw spring-boot:run)
 
 # terminal 2
-cd frontend
+cd apps/frontend
 npm install        # or `npm ci` for a lockfile-exact install
 npm run dev
 ```
@@ -194,26 +218,36 @@ The schema is owned by the ordered migrations in `apps/backend/src/main/resource
 
 ## Front-end
 
-The React + TypeScript + Vite app lives in `apps/frontend/` (see `docs/adr/0006-frontend-location-and-api-base-url.md`). It reaches the API by absolute URL from `VITE_API_BASE_URL`, defaulting to `http://localhost:8070/api/v1`; there is no dev proxy, so development relies on the CORS origins above.
+The React + TypeScript + Vite app lives in `apps/frontend/` (see [ADR-0006](docs/adr/0006-frontend-location-and-api-base-url.md) and [apps/frontend/README.md](apps/frontend/README.md)). It reaches the API by absolute URL from `VITE_API_BASE_URL`, defaulting to `http://localhost:8070/api/v1`; there is no dev proxy, so development relies on the CORS origins above.
 
-The production build is integrated into the single Spring artifact: `npm run build` (which runs `tsc -b && vite build`) emits `apps/frontend/dist`, and the Maven `package` phase runs `npm ci` and `npm run build` in `apps/frontend/` and copies `apps/frontend/dist` into the jar's static resources (`apps/backend/target/classes/static`). The npm steps are bound to `prepare-package`, after the test phase, so `./mvnw test` never needs Node.
+The production build is integrated into the single Spring artifact: `npm run build` (which runs `tsc -b && vite build`) emits `apps/frontend/dist`, and the Maven `package` phase runs `npm ci` and `npm run build` in `apps/frontend/` and copies `apps/frontend/dist` into the jar's static resources (`apps/backend/target/classes/static`). The npm steps are bound to `prepare-package`, after the test phase, so `(cd apps/backend && ./mvnw test)` never needs Node.
+
+### OpenAPI contract
+
+Front-end API types are generated from the committed OpenAPI snapshot `apps/frontend/openapi.json` into `apps/frontend/src/api/schema.d.ts` ([ADR-0005](docs/adr/0005-openapi-snapshot-as-frontend-contract.md)). After changing a back-end endpoint or DTO, start the API on port 8070 (for example with `make dev` or `(cd apps/backend && ./mvnw spring-boot:run)`) and refresh both files from the repository root:
+
+```bash
+npm --prefix apps/frontend run api:refresh
+```
+
+Override the spec source URL with `API_DOCS_URL=<url>` if the API is listening elsewhere.
 
 ### Checks
 
-`npm run check` runs typecheck, lint and the test suite in one go; lint treats warnings as failures. From the repository root, `make check` is the same command: `npm --prefix frontend run check`.
+Inside `apps/frontend/`, `npm run check` runs typecheck, lint and the test suite in one go; lint treats warnings as failures. From the repository root, `make check` (alias of `make test-frontend`) runs the same command: `npm --prefix apps/frontend run check`.
 
 ### Formatting
 
-Code style is owned by the tooling (ADR-0009), not by hand: Spotless formats the Java back-end with google-java-format (AOSP style) and Prettier formats the front-end TypeScript/TSX/CSS. Apply or verify every file with:
+Code style is owned by the tooling ([ADR-0009](docs/adr/0009-code-formatting-tools.md)), not by hand: Spotless formats `apps/backend` with google-java-format (AOSP style) and Prettier formats `apps/frontend` TypeScript/TSX/CSS. Apply or verify every file with:
 
 ```bash
-make format        # apply both formatters to the whole tree
-make format-check  # verify without writing (what pre-push runs)
+make format        # apply both formatters to apps/backend and apps/frontend
+make format-check  # verify without writing (what pre-push and CI run)
 ```
 
 ### Git hooks
 
-The repository ships its git hooks in `.githooks/`: the pre-commit formats the staged Java and front-end files, re-stages them and then runs the front-end checks; the pre-push runs the strict format checks and `./mvnw -q test`. Enable them once per clone:
+The repository ships its git hooks in `.githooks/`: `pre-commit` formats the staged Java (`apps/backend/`) and front-end (`apps/frontend/src/`) files, re-stages them and runs `npm --prefix apps/frontend run check`; `pre-push` runs the strict format checks and `(cd apps/backend && ./mvnw -q test)`. Pull requests and pushes to `main` also run `make format-check` in GitHub Actions (`.github/workflows/format.yml`). Enable the local hooks once per clone:
 
 ```bash
 make setup
@@ -228,11 +262,11 @@ make test
 `make test` runs both suites:
 
 ```bash
-make test-backend                   # backend, on H2 in PostgreSQL mode
-npm --prefix apps/frontend run check  # typecheck, lint and front-end tests
+make test-backend                     # (cd apps/backend && ./mvnw test), on H2 in PostgreSQL mode
+make test-frontend                    # npm --prefix apps/frontend run check (typecheck, lint, tests)
 ```
 
-The backend tests run the same Flyway migrations against H2, so a migration that drifts from the entities fails the suite.
+The backend suite runs pure domain/application unit tests, ArchUnit hexagonal boundary checks, and full-stack `MockMvc` tests applying the same Flyway migrations against H2, so a migration that drifts from the JPA entities fails the suite.
 
 ## Known limitations
 
