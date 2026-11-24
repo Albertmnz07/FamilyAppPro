@@ -2,7 +2,7 @@ package albertmnz07.familyapp.application.command;
 
 import albertmnz07.familyapp.application.port.Clock;
 import albertmnz07.familyapp.domain.exception.ForbiddenException;
-import albertmnz07.familyapp.domain.exception.NotFoundException;
+import albertmnz07.familyapp.domain.exception.ResourceNotFoundException;
 import albertmnz07.familyapp.domain.model.Family;
 import albertmnz07.familyapp.domain.model.Membership;
 import albertmnz07.familyapp.domain.repository.FamilyRepository;
@@ -34,7 +34,8 @@ public class RevokeConsentCommandHandler implements CommandHandler<RevokeConsent
         Family family =
                 families.findById(familyId)
                         .orElseThrow(() ->
-                                new NotFoundException("Family not found: " + familyId.value()));
+                                new ResourceNotFoundException(
+                                        "Family not found: " + familyId.value()));
         memberships
                 .findByFamilyAndPersona(family.id(), actorId)
                 .filter(Membership::isConsentInForce)

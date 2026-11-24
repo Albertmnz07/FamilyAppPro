@@ -17,15 +17,17 @@ public record PhotoContentType(String value) {
     }
 
     public static PhotoContentType of(String raw) {
-        return of(raw, "photo");
+        String normalized = raw == null ? null : raw.toLowerCase(Locale.ROOT);
+        return new PhotoContentType(normalized);
     }
 
     /** Parses an uploaded type, naming the photo side in the refusal message. */
-    public static PhotoContentType of(String raw, String side) {
+    public static PhotoContentType of(String raw, PhotoSide side) {
+        java.util.Objects.requireNonNull(side, "side");
         String normalized = raw == null ? null : raw.toLowerCase(Locale.ROOT);
         if (normalized == null || !ALLOWED.contains(normalized)) {
             throw new UnsupportedPhotoTypeException(
-                    "The " + side + " photo must be image/jpeg or image/png");
+                    "The " + side.lowerName() + " photo must be image/jpeg or image/png");
         }
         return new PhotoContentType(normalized);
     }

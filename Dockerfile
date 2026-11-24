@@ -2,8 +2,8 @@
 
 # Back-end image (TN-26): a `runtime` target that serves the API and the built
 # front-end from one jar (ADR-0006), and a `dev` target for compose.dev.yml.
-# The build context is the repository root, because the Spring Boot project and
-# the front-end source both live there.
+# The build context is the repository root so both apps/backend and
+# apps/frontend are available to the multi-stage build (ADR-0010).
 
 # Node 24 is copied into the Maven builder because the `package` phase runs
 # `npm ci` and `npm run build` in apps/frontend/ (see pom.xml).

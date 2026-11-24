@@ -22,7 +22,7 @@ public class LocalFilePhotoStore implements PhotoStore {
 
     public LocalFilePhotoStore(@Value("${app.photos.storage-dir:./data/photos}") String storageDir)
             throws IOException {
-        this.root = Path.of(storageDir).toAbsolutePath();
+        this.root = Path.of(storageDir).toAbsolutePath().normalize();
         Files.createDirectories(root);
     }
 

@@ -21,8 +21,4 @@ public record PageQuery(int page, int size) {
     public static PageQuery of(int page, int size) {
         return new PageQuery(Math.max(0, page), size < 1 ? DEFAULT_SIZE : size);
     }
-
-    public static PageQuery defaultPage() {
-        return new PageQuery(0, DEFAULT_SIZE);
-    }
 }

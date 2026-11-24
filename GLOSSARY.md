@@ -10,7 +10,7 @@ _Avoid_: User, Account
 
 **DNI**:
 The unique number that identifies a Persona. Required at registration, normalized to uppercase and never edited.
-_Avoid_: DNI number, Identity number
+_Avoid_: DNI number (except the `DniNumber` Value Object inside composite `Dni`, ADR-0010), Identity number
 
 **DNI photos**:
 Optional front and back images evidencing a Persona's DNI, uploaded after registration. They are shared only while Consent is in force.
@@ -42,4 +42,4 @@ _Avoid_: Look
 
 **Invite**:
 A family-scoped, single-use, time-bound token (code) that a persona redeems to become a member and grant consent.
-_Avoid_: Code, Ticket
+_Avoid_: Code (except the 6-character `InviteCode` Value Object inside `Invite`, ADR-0010), Ticket

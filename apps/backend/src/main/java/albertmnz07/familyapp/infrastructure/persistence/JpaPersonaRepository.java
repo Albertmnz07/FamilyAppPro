@@ -64,7 +64,7 @@ public class JpaPersonaRepository implements PersonaRepository {
         return new PersonaJpaEntity(
                 persona.id().value(),
                 persona.username().value(),
-                dni.number().value(),
+                dni.value(),
                 persona.passwordHash().map(PasswordHash::value).orElse(null),
                 dni.front().map(photo -> photo.key().value()).orElse(null),
                 dni.front().map(photo -> photo.contentType().value()).orElse(null),

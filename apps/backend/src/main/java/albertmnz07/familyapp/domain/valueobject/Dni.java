@@ -24,12 +24,21 @@ public final class Dni {
         return number;
     }
 
+    public String value() {
+        return number.value();
+    }
+
     public Optional<DniPhoto> front() {
         return Optional.ofNullable(front);
     }
 
     public Optional<DniPhoto> back() {
         return Optional.ofNullable(back);
+    }
+
+    public Optional<DniPhoto> photo(PhotoSide side) {
+        Objects.requireNonNull(side, "side");
+        return side == PhotoSide.FRONT ? front() : back();
     }
 
     /** Replaces the given sides; a {@code null} side keeps the current photo. */

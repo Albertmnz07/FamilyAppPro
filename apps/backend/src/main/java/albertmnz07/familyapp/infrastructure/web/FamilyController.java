@@ -10,7 +10,6 @@ import albertmnz07.familyapp.application.query.DniPhotoView;
 import albertmnz07.familyapp.application.query.FamilyView;
 import albertmnz07.familyapp.application.query.GetFamilyQuery;
 import albertmnz07.familyapp.application.query.GetMemberDniPhotoQuery;
-import albertmnz07.familyapp.application.query.GetMemberDniPhotoQuery.Side;
 import albertmnz07.familyapp.application.query.GetMemberDniQuery;
 import albertmnz07.familyapp.application.query.ListFamilyMembersQuery;
 import albertmnz07.familyapp.application.query.ListMyFamiliesQuery;
@@ -20,6 +19,7 @@ import albertmnz07.familyapp.application.query.PageQuery;
 import albertmnz07.familyapp.application.query.PagedResult;
 import albertmnz07.familyapp.application.query.QueryHandler;
 import albertmnz07.familyapp.domain.valueobject.PersonaId;
+import albertmnz07.familyapp.domain.valueobject.PhotoSide;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -148,7 +148,7 @@ public class FamilyController {
             @ActingPersona PersonaId viewer,
             @PathVariable UUID familyId,
             @PathVariable UUID personaId) {
-        return memberPhoto(viewer, familyId, personaId, Side.FRONT);
+        return memberPhoto(viewer, familyId, personaId, PhotoSide.FRONT);
     }
 
     @GetMapping("/api/v1/families/{familyId}/members/{personaId}/dni/back")
@@ -156,11 +156,11 @@ public class FamilyController {
             @ActingPersona PersonaId viewer,
             @PathVariable UUID familyId,
             @PathVariable UUID personaId) {
-        return memberPhoto(viewer, familyId, personaId, Side.BACK);
+        return memberPhoto(viewer, familyId, personaId, PhotoSide.BACK);
     }
 
     private ResponseEntity<byte[]> memberPhoto(
-            PersonaId viewer, UUID familyId, UUID personaId, Side side) {
+            PersonaId viewer, UUID familyId, UUID personaId, PhotoSide side) {
         DniPhotoView photo =
                 getMemberDniPhoto.handle(
                         new GetMemberDniPhotoQuery(viewer.value(), familyId, personaId, side));

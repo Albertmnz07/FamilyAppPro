@@ -1,5 +1,5 @@
-# Build context for the back-end image. The Spring Boot project lives at the
-# repository root, so this is the root .dockerignore rather than backend/.dockerignore.
+# Build context for the back-end image. The build context is the repository root
+# so Docker can copy both apps/backend and apps/frontend into the multi-stage build.
 # Keep the sources and the Maven wrapper; drop host build output, dependencies
 # and local data.
 apps/backend/target/

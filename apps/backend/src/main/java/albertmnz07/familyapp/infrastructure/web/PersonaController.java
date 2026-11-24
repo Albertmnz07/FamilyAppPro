@@ -6,11 +6,11 @@ import albertmnz07.familyapp.application.command.RegisterPersonaCommand;
 import albertmnz07.familyapp.application.command.UpdateDniPhotosCommand;
 import albertmnz07.familyapp.application.query.DniPhotoView;
 import albertmnz07.familyapp.application.query.GetMyDniPhotoQuery;
-import albertmnz07.familyapp.application.query.GetMyDniPhotoQuery.Side;
 import albertmnz07.familyapp.application.query.GetMyPersonaQuery;
 import albertmnz07.familyapp.application.query.PersonaView;
 import albertmnz07.familyapp.application.query.QueryHandler;
 import albertmnz07.familyapp.domain.valueobject.PersonaId;
+import albertmnz07.familyapp.domain.valueobject.PhotoSide;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -95,15 +95,15 @@ public class PersonaController {
 
     @GetMapping("/me/photos/front")
     public ResponseEntity<byte[]> myFrontPhoto(@ActingPersona PersonaId personaId) {
-        return photo(personaId, Side.FRONT);
+        return photo(personaId, PhotoSide.FRONT);
     }
 
     @GetMapping("/me/photos/back")
     public ResponseEntity<byte[]> myBackPhoto(@ActingPersona PersonaId personaId) {
-        return photo(personaId, Side.BACK);
+        return photo(personaId, PhotoSide.BACK);
     }
 
-    private ResponseEntity<byte[]> photo(PersonaId personaId, Side side) {
+    private ResponseEntity<byte[]> photo(PersonaId personaId, PhotoSide side) {
         DniPhotoView photo = getMyDniPhoto.handle(new GetMyDniPhotoQuery(personaId.value(), side));
         return PhotoResponses.of(photo.content(), photo.contentType());
     }

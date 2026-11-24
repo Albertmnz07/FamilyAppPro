@@ -7,8 +7,8 @@ import albertmnz07.familyapp.domain.exception.ForbiddenException;
 import albertmnz07.familyapp.domain.exception.InvalidValueException;
 import albertmnz07.familyapp.domain.exception.InviteAlreadyRedeemedException;
 import albertmnz07.familyapp.domain.exception.InviteExpiredException;
-import albertmnz07.familyapp.domain.exception.NotFoundException;
 import albertmnz07.familyapp.domain.exception.PhotoTooLargeException;
+import albertmnz07.familyapp.domain.exception.ResourceNotFoundException;
 import albertmnz07.familyapp.domain.exception.UnauthorizedException;
 import albertmnz07.familyapp.domain.exception.UnsupportedPhotoTypeException;
 import jakarta.validation.ConstraintViolationException;
@@ -38,8 +38,8 @@ public class ApiExceptionHandler {
         return problem(HttpStatus.FORBIDDEN, "Forbidden", ex.getMessage(), "forbidden");
     }
 
-    @ExceptionHandler(NotFoundException.class)
-    public ProblemDetail notFound(NotFoundException ex) {
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ProblemDetail notFound(ResourceNotFoundException ex) {
         return problem(HttpStatus.NOT_FOUND, "Not found", ex.getMessage(), "not-found");
     }
 

@@ -2,11 +2,12 @@ package albertmnz07.familyapp.application.command;
 
 import albertmnz07.familyapp.application.port.PhotoStore;
 import albertmnz07.familyapp.application.query.PersonaView;
-import albertmnz07.familyapp.domain.exception.NotFoundException;
+import albertmnz07.familyapp.domain.exception.ResourceNotFoundException;
 import albertmnz07.familyapp.domain.model.Persona;
 import albertmnz07.familyapp.domain.repository.PersonaRepository;
 import albertmnz07.familyapp.domain.valueobject.DniPhoto;
 import albertmnz07.familyapp.domain.valueobject.PersonaId;
+import albertmnz07.familyapp.domain.valueobject.PhotoSide;
 import albertmnz07.familyapp.domain.valueobject.RawPhoto;
 
 public class UpdateDniPhotosCommandHandler
@@ -29,15 +30,15 @@ public class UpdateDniPhotosCommandHandler
         PersonaId id = new PersonaId(command.personaId());
         Persona persona =
                 personas.findById(id)
-                        .orElseThrow(
-                                () -> new NotFoundException("Persona not found: " + id.value()));
-        RawPhoto front = rawOf(command.front(), "front");
-        RawPhoto back = rawOf(command.back(), "back");
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException("Persona not found: " + id.value()));
+        RawPhoto front = rawOf(command.front(), PhotoSide.FRONT);
+        RawPhoto back = rawOf(command.back(), PhotoSide.BACK);
         persona.changeDniPhotos(store(front), store(back));
         return PersonaView.of(personas.save(persona));
     }
 
-    private static RawPhoto rawOf(PhotoUpload upload, String side) {
+    private static RawPhoto rawOf(PhotoUpload upload, PhotoSide side) {
         return upload == null ? null : RawPhoto.of(side, upload.content(), upload.contentType());
     }
 

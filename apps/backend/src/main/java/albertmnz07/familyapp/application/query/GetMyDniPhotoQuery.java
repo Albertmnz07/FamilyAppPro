@@ -1,21 +1,6 @@
 package albertmnz07.familyapp.application.query;
 
+import albertmnz07.familyapp.domain.valueobject.PhotoSide;
 import java.util.UUID;
 
-public record GetMyDniPhotoQuery(UUID personaId, Side side) {
-
-    public enum Side {
-        FRONT("Front"),
-        BACK("Back");
-
-        private final String label;
-
-        Side(String label) {
-            this.label = label;
-        }
-
-        String label() {
-            return label;
-        }
-    }
-}
+public record GetMyDniPhotoQuery(UUID personaId, PhotoSide side) {}

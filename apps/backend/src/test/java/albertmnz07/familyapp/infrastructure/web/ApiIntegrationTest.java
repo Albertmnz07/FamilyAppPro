@@ -12,35 +12,38 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import albertmnz07.familyapp.infrastructure.persistence.AuthTokenJpaRepository;
-import albertmnz07.familyapp.infrastructure.persistence.ConsentJpaRepository;
-import albertmnz07.familyapp.infrastructure.persistence.FamilyJpaRepository;
-import albertmnz07.familyapp.infrastructure.persistence.InviteJpaEntity;
-import albertmnz07.familyapp.infrastructure.persistence.InviteJpaRepository;
-import albertmnz07.familyapp.infrastructure.persistence.MembershipJpaRepository;
-import albertmnz07.familyapp.infrastructure.persistence.PersonaJpaEntity;
-import albertmnz07.familyapp.infrastructure.persistence.PersonaJpaRepository;
+import albertmnz07.familyapp.application.port.Clock;
 import com.jayway.jsonpath.JsonPath;
 import io.swagger.v3.oas.annotations.Parameter;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Import(ApiIntegrationTest.ControllableClockConfig.class)
 class ApiIntegrationTest {
 
+    private static final Instant INITIAL_TIME = Instant.parse("2030-01-01T00:00:00Z");
     private static final String AUTH = "Authorization";
     private static final String PASSWORD = "password123";
     private static final String PHOTOS_PATH = "/api/v1/personas/me/dni/photos";
@@ -52,37 +55,52 @@ class ApiIntegrationTest {
 
     @Autowired MockMvc mvc;
 
-    @Autowired PersonaJpaRepository personas;
+    @Autowired JdbcTemplate jdbc;
 
-    @Autowired FamilyJpaRepository families;
+    @Autowired ControllableClock clock;
 
-    @Autowired InviteJpaRepository invites;
+    @TestConfiguration
+    static class ControllableClockConfig {
 
-    @Autowired MembershipJpaRepository memberships;
+        @Bean
+        @Primary
+        ControllableClock controllableClock() {
+            return new ControllableClock();
+        }
+    }
 
-    @Autowired ConsentJpaRepository consents;
+    static final class ControllableClock implements Clock {
 
-    @Autowired AuthTokenJpaRepository tokens;
+        private final AtomicReference<Instant> current = new AtomicReference<>(INITIAL_TIME);
+
+        @Override
+        public Instant now() {
+            return current.get();
+        }
+
+        void advance(Duration duration) {
+            current.updateAndGet(instant -> instant.plus(duration));
+        }
+
+        void reset() {
+            current.set(INITIAL_TIME);
+        }
+    }
 
     @AfterEach
     void cleanUp() {
-        tokens.deleteAll();
-        consents.deleteAll();
-        memberships.deleteAll();
-        invites.deleteAll();
-        families.deleteAll();
-        personas.deleteAll();
+        clock.reset();
+        jdbc.update("delete from auth_token");
+        jdbc.update("delete from consent");
+        jdbc.update("delete from membership");
+        jdbc.update("delete from invite");
+        jdbc.update("delete from family");
+        jdbc.update("delete from persona");
     }
 
     @Test
     void registersAPersonaWithoutPhotos() throws Exception {
-        UUID personaId = registerPersona(ADMIN_DNI);
-        PersonaJpaEntity persona = personas.findById(personaId).orElseThrow();
-
-        assertThat(persona.getFrontPhotoKey()).isNull();
-        assertThat(persona.getBackPhotoKey()).isNull();
-        assertThat(persona.getFrontPhotoContentType()).isNull();
-        assertThat(persona.getBackPhotoContentType()).isNull();
+        registerPersona(ADMIN_DNI);
 
         mvc.perform(get("/api/v1/personas/me").header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isOk())
@@ -92,9 +110,11 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.backPhotoUrl").value(nullValue()));
 
         mvc.perform(get("/api/v1/personas/me/photos/front").header(AUTH, bearer(ADMIN_DNI)))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("not-found"));
         mvc.perform(get("/api/v1/personas/me/photos/back").header(AUTH, bearer(ADMIN_DNI)))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("not-found"));
     }
 
     @Test
@@ -123,10 +143,21 @@ class ApiIntegrationTest {
     }
 
     @Test
-    void normalizesTheDniToUppercase() throws Exception {
-        mvc.perform(registerRequest("mixed-case-user", "  abc-123  "))
+    void normalizesUsernameToLowercaseAndDniToUppercase() throws Exception {
+        mvc.perform(registerRequest("Mixed.User_1", "  abc-123  "))
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.username").value("mixed.user_1"))
                 .andExpect(jsonPath("$.dni").value("ABC-123"));
+
+        mvc.perform(
+                        post("/api/v1/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(
+                                        "{\"username\":\"MIXED.USER_1\",\"password\":\""
+                                                + PASSWORD
+                                                + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("mixed.user_1"));
     }
 
     @Test
@@ -142,7 +173,8 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.backPhotoUrl").value(nullValue()));
 
         mvc.perform(get("/api/v1/personas/me/photos/back").header(AUTH, bearer(ADMIN_DNI)))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("not-found"));
     }
 
     @Test
@@ -270,20 +302,33 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.code").value("unauthorized"));
 
         mvc.perform(get("/api/v1/me/families").header(AUTH, "Bearer not-a-token"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("unauthorized"));
+
+        mvc.perform(get("/api/v1/me/families").header(AUTH, "Bearer    "))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("unauthorized"));
 
         mvc.perform(get("/api/v1/me/families").header(AUTH, "not-bearer"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("unauthorized"));
     }
 
     @Test
-    void loginIssuesATokenThatIdentifiesThePersona() throws Exception {
+    void loginIssuesATokenThatIdentifiesThePersonaUntilItExpires() throws Exception {
         registerPersona(ADMIN_DNI);
+        String token = bearer(ADMIN_DNI);
 
-        mvc.perform(get("/api/v1/personas/me").header(AUTH, bearer(ADMIN_DNI)))
+        mvc.perform(get("/api/v1/personas/me").header(AUTH, token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.username").value(usernameFor(ADMIN_DNI)))
                 .andExpect(jsonPath("$.dni").value(ADMIN_DNI));
+
+        clock.advance(Duration.ofDays(7).plusSeconds(1));
+
+        mvc.perform(get("/api/v1/personas/me").header(AUTH, token))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("unauthorized"));
     }
 
     @Test
@@ -302,16 +347,22 @@ class ApiIntegrationTest {
     }
 
     @Test
-    void loginRejectsAnUnknownUsername() throws Exception {
-        mvc.perform(
-                        post("/api/v1/auth/login")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(
-                                        "{\"username\":\"nobody\",\"password\":\""
-                                                + PASSWORD
-                                                + "\"}"))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.code").value("unauthorized"));
+    void loginRejectsAnUnknownUsernameMalformedUsernameOrShortPasswordWithUnauthorized()
+            throws Exception {
+        registerPersona(ADMIN_DNI);
+
+        for (String payload :
+                List.of(
+                        "{\"username\":\"nobody\",\"password\":\"" + PASSWORD + "\"}",
+                        "{\"username\":\"!\",\"password\":\"" + PASSWORD + "\"}",
+                        "{\"username\":\"" + usernameFor(ADMIN_DNI) + "\",\"password\":\"x\"}")) {
+            mvc.perform(
+                            post("/api/v1/auth/login")
+                                    .contentType(MediaType.APPLICATION_JSON)
+                                    .content(payload))
+                    .andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("unauthorized"));
+        }
     }
 
     @Test
@@ -326,27 +377,26 @@ class ApiIntegrationTest {
 
     @Test
     void creatingAFamilyMakesTheCreatorItsAdminAndMember() throws Exception {
-        registerPersona(ADMIN_DNI);
+        UUID adminId = registerPersona(ADMIN_DNI);
         UUID familyId = createFamily(ADMIN_DNI, "Familia García");
 
         mvc.perform(get("/api/v1/me/families").header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(1))
                 .andExpect(jsonPath("$.content[0].id").value(familyId.toString()))
-                .andExpect(
-                        jsonPath("$.content[0].adminPersonaId")
-                                .value(adminOf(familyId).toString()));
+                .andExpect(jsonPath("$.content[0].adminPersonaId").value(adminId.toString()));
 
         mvc.perform(get("/api/v1/families/" + familyId).header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Familia García"));
+                .andExpect(jsonPath("$.name").value("Familia García"))
+                .andExpect(jsonPath("$.adminPersonaId").value(adminId.toString()));
 
         mvc.perform(
                         get("/api/v1/families/" + familyId + "/members")
                                 .header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(1))
-                .andExpect(jsonPath("$.content[0].personaId").value(adminOf(familyId).toString()))
+                .andExpect(jsonPath("$.content[0].personaId").value(adminId.toString()))
                 .andExpect(jsonPath("$.content[0].username").value(usernameFor(ADMIN_DNI)))
                 .andExpect(jsonPath("$.content[0].admin").value(true))
                 .andExpect(jsonPath("$.content[0].consentInForce").value(true))
@@ -380,10 +430,47 @@ class ApiIntegrationTest {
     }
 
     @Test
-    void gettingAMissingFamilyReturnsNotFound() throws Exception {
-        registerPersona(ADMIN_DNI);
+    void operationsTargetingAMissingFamilyReturnNotFound() throws Exception {
+        UUID adminId = registerPersona(ADMIN_DNI);
+        UUID missingFamilyId = UUID.randomUUID();
+        String token = bearer(ADMIN_DNI);
 
-        mvc.perform(get("/api/v1/families/" + UUID.randomUUID()).header(AUTH, bearer(ADMIN_DNI)))
+        mvc.perform(get("/api/v1/families/" + missingFamilyId).header(AUTH, token))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("not-found"));
+        mvc.perform(get("/api/v1/families/" + missingFamilyId + "/members").header(AUTH, token))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("not-found"));
+        mvc.perform(post("/api/v1/families/" + missingFamilyId + "/invites").header(AUTH, token))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("not-found"));
+        mvc.perform(
+                        delete("/api/v1/families/" + missingFamilyId + "/members/" + adminId)
+                                .header(AUTH, token))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("not-found"));
+        mvc.perform(
+                        delete(
+                                        "/api/v1/families/"
+                                                + missingFamilyId
+                                                + "/members/"
+                                                + adminId
+                                                + "/consent")
+                                .header(AUTH, token))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("not-found"));
+        mvc.perform(
+                        get("/api/v1/families/" + missingFamilyId + "/members/" + adminId + "/dni")
+                                .header(AUTH, token))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("not-found"));
+        mvc.perform(
+                        get("/api/v1/families/"
+                                        + missingFamilyId
+                                        + "/members/"
+                                        + adminId
+                                        + "/dni/front")
+                                .header(AUTH, token))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("not-found"));
     }
@@ -422,9 +509,7 @@ class ApiIntegrationTest {
                 .andExpect(jsonPath("$.code").value("not-found"));
 
         mvc.perform(
-                        post("/api/v1/invites/"
-                                        + code.toLowerCase(java.util.Locale.ROOT)
-                                        + "/redemption")
+                        post("/api/v1/invites/" + code.toLowerCase(Locale.ROOT) + "/redemption")
                                 .header(AUTH, bearer(MEMBER_DNI)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.familyId").value(familyId.toString()))
@@ -442,17 +527,22 @@ class ApiIntegrationTest {
         mvc.perform(
                         post("/api/v1/families/" + familyId + "/invites")
                                 .header(AUTH, bearer(MEMBER_DNI)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("forbidden"));
         mvc.perform(
                         post("/api/v1/families/" + familyId + "/invites")
                                 .header(AUTH, bearer(OUTSIDER_DNI)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("forbidden"));
         mvc.perform(
                         post("/api/v1/families/" + familyId + "/invites")
                                 .header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.code").isString())
-                .andExpect(jsonPath("$.familyId").value(familyId.toString()));
+                .andExpect(jsonPath("$.familyId").value(familyId.toString()))
+                .andExpect(
+                        jsonPath("$.expiresAt")
+                                .value(INITIAL_TIME.plus(Duration.ofDays(7)).toString()));
     }
 
     @Test
@@ -486,7 +576,8 @@ class ApiIntegrationTest {
         mvc.perform(
                         get("/api/v1/families/" + familyId + "/members/" + memberId + "/dni/front")
                                 .header(AUTH, bearer(ADMIN_DNI)))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("not-found"));
     }
 
     @Test
@@ -496,19 +587,22 @@ class ApiIntegrationTest {
         UUID outsiderId = registerPersona(OUTSIDER_DNI);
 
         mvc.perform(get("/api/v1/families/" + familyId).header(AUTH, bearer(OUTSIDER_DNI)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("forbidden"));
         mvc.perform(
                         get("/api/v1/families/" + familyId + "/members")
                                 .header(AUTH, bearer(OUTSIDER_DNI)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("forbidden"));
         mvc.perform(
                         get("/api/v1/families/" + familyId + "/members/" + outsiderId + "/dni")
                                 .header(AUTH, bearer(OUTSIDER_DNI)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("forbidden"));
     }
 
     @Test
-    void aPersonaOutsideTheFamilyCannotBeInspected() throws Exception {
+    void aPersonaOutsideTheFamilyOrMissingCannotBeInspected() throws Exception {
         registerPersona(ADMIN_DNI);
         UUID familyId = createFamily(ADMIN_DNI, "Familia García");
         UUID outsiderId = registerPersona(OUTSIDER_DNI);
@@ -516,7 +610,18 @@ class ApiIntegrationTest {
         mvc.perform(
                         get("/api/v1/families/" + familyId + "/members/" + outsiderId + "/dni")
                                 .header(AUTH, bearer(ADMIN_DNI)))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("not-found"));
+
+        mvc.perform(
+                        get("/api/v1/families/"
+                                        + familyId
+                                        + "/members/"
+                                        + UUID.randomUUID()
+                                        + "/dni")
+                                .header(AUTH, bearer(ADMIN_DNI)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("not-found"));
     }
 
     @Test
@@ -541,7 +646,8 @@ class ApiIntegrationTest {
         mvc.perform(
                         get("/api/v1/families/" + familyId + "/members/" + memberId + "/dni")
                                 .header(AUTH, bearer(ADMIN_DNI)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("forbidden"));
     }
 
     @Test
@@ -553,12 +659,13 @@ class ApiIntegrationTest {
         mvc.perform(
                         delete("/api/v1/families/" + familyId + "/members/" + memberId + "/consent")
                                 .header(AUTH, bearer(ADMIN_DNI)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("forbidden"));
     }
 
     @Test
-    void removingAMemberRevokesAccess() throws Exception {
-        registerPersona(ADMIN_DNI);
+    void removingAMemberRevokesAccessAndExcludesTheFamilyFromTheirList() throws Exception {
+        UUID adminId = registerPersona(ADMIN_DNI);
         UUID familyId = createFamily(ADMIN_DNI, "Familia García");
         UUID memberId = joinFamily(familyId, MEMBER_DNI);
 
@@ -572,8 +679,22 @@ class ApiIntegrationTest {
                                 .header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content.length()").value(1));
+        mvc.perform(get("/api/v1/me/families").header(AUTH, bearer(MEMBER_DNI)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0));
         mvc.perform(get("/api/v1/families/" + familyId).header(AUTH, bearer(MEMBER_DNI)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("forbidden"));
+        mvc.perform(
+                        get("/api/v1/families/" + familyId + "/members/" + adminId + "/dni")
+                                .header(AUTH, bearer(MEMBER_DNI)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("forbidden"));
+        mvc.perform(
+                        delete("/api/v1/families/" + familyId + "/members/" + memberId)
+                                .header(AUTH, bearer(ADMIN_DNI)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("not-found"));
     }
 
     @Test
@@ -630,11 +751,11 @@ class ApiIntegrationTest {
 
     @Test
     void theAdminCannotBeRemoved() throws Exception {
-        registerPersona(ADMIN_DNI);
+        UUID adminId = registerPersona(ADMIN_DNI);
         UUID familyId = createFamily(ADMIN_DNI, "Familia García");
 
         mvc.perform(
-                        delete("/api/v1/families/" + familyId + "/members/" + adminOf(familyId))
+                        delete("/api/v1/families/" + familyId + "/members/" + adminId)
                                 .header(AUTH, bearer(ADMIN_DNI)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("cannot-remove-admin"));
@@ -660,16 +781,14 @@ class ApiIntegrationTest {
     void anExpiredInviteIsRejected() throws Exception {
         registerPersona(ADMIN_DNI);
         UUID familyId = createFamily(ADMIN_DNI, "Familia García");
-        invites.save(
-                new InviteJpaEntity(
-                        UUID.randomUUID(),
-                        "EXPIRE",
-                        familyId,
-                        Instant.now().minusSeconds(60),
-                        null));
+        String code = issueInvite(ADMIN_DNI, familyId);
         registerPersona(OUTSIDER_DNI);
 
-        mvc.perform(post("/api/v1/invites/EXPIRE/redemption").header(AUTH, bearer(OUTSIDER_DNI)))
+        clock.advance(Duration.ofDays(7));
+
+        mvc.perform(
+                        post("/api/v1/invites/" + code + "/redemption")
+                                .header(AUTH, bearer(OUTSIDER_DNI)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("invite-expired"));
     }
@@ -679,7 +798,8 @@ class ApiIntegrationTest {
         registerPersona(ADMIN_DNI);
 
         mvc.perform(post("/api/v1/invites/ZZZZZZ/redemption").header(AUTH, bearer(ADMIN_DNI)))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("not-found"));
     }
 
     @Test
@@ -751,9 +871,17 @@ class ApiIntegrationTest {
     @Test
     void aPageSizeAboveTheCapIsClampedToTheMaximum() throws Exception {
         registerPersona(ADMIN_DNI);
-        createFamily(ADMIN_DNI, "Familia García");
+        UUID familyId = createFamily(ADMIN_DNI, "Familia García");
 
         mvc.perform(get("/api/v1/me/families").header(AUTH, bearer(ADMIN_DNI)).param("size", "500"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.size").value(100))
+                .andExpect(jsonPath("$.content.length()").value(1));
+
+        mvc.perform(
+                        get("/api/v1/families/" + familyId + "/members")
+                                .header(AUTH, bearer(ADMIN_DNI))
+                                .param("size", "500"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.size").value(100))
                 .andExpect(jsonPath("$.content.length()").value(1));
@@ -952,7 +1080,7 @@ class ApiIntegrationTest {
     }
 
     private String usernameFor(String dni) {
-        return "user-" + dni.toLowerCase(java.util.Locale.ROOT);
+        return "user-" + dni.toLowerCase(Locale.ROOT);
     }
 
     private String bearer(String dni) throws Exception {
@@ -1003,9 +1131,5 @@ class ApiIntegrationTest {
         String code = issueInvite(ADMIN_DNI, familyId);
         redeem(code, dni);
         return personaId;
-    }
-
-    private UUID adminOf(UUID familyId) {
-        return families.findById(familyId).orElseThrow().getAdminId();
     }
 }

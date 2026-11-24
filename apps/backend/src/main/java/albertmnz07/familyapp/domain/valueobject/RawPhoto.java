@@ -21,12 +21,13 @@ public record RawPhoto(byte[] content, PhotoContentType contentType) {
     }
 
     /** Validates an upload (presence, size, then type), naming the side in refusal messages. */
-    public static RawPhoto of(String side, byte[] content, String contentType) {
+    public static RawPhoto of(PhotoSide side, byte[] content, String contentType) {
+        Objects.requireNonNull(side, "side");
         if (content == null || content.length == 0) {
-            throw new InvalidValueException("The " + side + " photo is required");
+            throw new InvalidValueException("The " + side.lowerName() + " photo is required");
         }
         if (content.length > MAX_BYTES) {
-            throw new PhotoTooLargeException("The " + side + " photo exceeds 10 MB");
+            throw new PhotoTooLargeException("The " + side.lowerName() + " photo exceeds 10 MB");
         }
         return new RawPhoto(content, PhotoContentType.of(contentType, side));
     }

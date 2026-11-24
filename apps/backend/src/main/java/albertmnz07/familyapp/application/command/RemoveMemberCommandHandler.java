@@ -1,7 +1,7 @@
 package albertmnz07.familyapp.application.command;
 
 import albertmnz07.familyapp.application.port.Clock;
-import albertmnz07.familyapp.domain.exception.NotFoundException;
+import albertmnz07.familyapp.domain.exception.ResourceNotFoundException;
 import albertmnz07.familyapp.domain.model.Family;
 import albertmnz07.familyapp.domain.model.Membership;
 import albertmnz07.familyapp.domain.repository.FamilyRepository;
@@ -30,14 +30,15 @@ public class RemoveMemberCommandHandler implements CommandHandler<RemoveMemberCo
         Family family =
                 families.findById(familyId)
                         .orElseThrow(() ->
-                                new NotFoundException("Family not found: " + familyId.value()));
+                                new ResourceNotFoundException(
+                                        "Family not found: " + familyId.value()));
         family.requireAdmin(actorId);
         Membership membership =
                 memberships
                         .findByFamilyAndPersona(family.id(), targetId)
                         .filter(Membership::isAccepted)
                         .orElseThrow(() ->
-                                new NotFoundException(
+                                new ResourceNotFoundException(
                                         "Member not found in family: " + targetId.value()));
         family.requireRemovable(targetId);
         membership.remove(clock.now());

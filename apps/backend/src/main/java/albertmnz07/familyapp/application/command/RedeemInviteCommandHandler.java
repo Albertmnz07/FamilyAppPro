@@ -2,7 +2,7 @@ package albertmnz07.familyapp.application.command;
 
 import albertmnz07.familyapp.application.port.Clock;
 import albertmnz07.familyapp.domain.exception.InvalidValueException;
-import albertmnz07.familyapp.domain.exception.NotFoundException;
+import albertmnz07.familyapp.domain.exception.ResourceNotFoundException;
 import albertmnz07.familyapp.domain.model.Invite;
 import albertmnz07.familyapp.domain.model.Membership;
 import albertmnz07.familyapp.domain.repository.InviteRepository;
@@ -31,8 +31,9 @@ public class RedeemInviteCommandHandler
         InviteCode code = parseInviteCode(command.code());
         Invite invite =
                 invites.findByCodeForUpdate(code)
-                        .orElseThrow(
-                                () -> new NotFoundException("Invite not found: " + command.code()));
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Invite not found: " + command.code()));
         Instant now = clock.now();
         invite.redeem(now);
         invites.save(invite);
@@ -53,7 +54,7 @@ public class RedeemInviteCommandHandler
         try {
             return InviteCode.of(raw);
         } catch (InvalidValueException malformed) {
-            throw new NotFoundException("Invite not found: " + raw);
+            throw new ResourceNotFoundException("Invite not found: " + raw);
         }
     }
 }

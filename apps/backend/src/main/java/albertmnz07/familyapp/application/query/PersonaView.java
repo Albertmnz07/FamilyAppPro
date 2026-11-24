@@ -11,7 +11,7 @@ public record PersonaView(
         return new PersonaView(
                 persona.id().value(),
                 persona.username().value(),
-                persona.dni().number().value(),
+                persona.dniValue(),
                 persona.dni().front().isPresent(),
                 persona.dni().back().isPresent());
     }

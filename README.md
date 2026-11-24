@@ -266,7 +266,7 @@ make test-backend                     # (cd apps/backend && ./mvnw test), on H2 
 make test-frontend                    # npm --prefix apps/frontend run check (typecheck, lint, tests)
 ```
 
-The backend suite runs pure domain/application unit tests, ArchUnit hexagonal boundary checks, and full-stack `MockMvc` tests applying the same Flyway migrations against H2, so a migration that drifts from the JPA entities fails the suite.
+The backend suite runs pure domain unit tests, ArchUnit hexagonal boundary checks, dedicated persistence/storage contract tests, and full-stack `MockMvc` tests applying the same Flyway migrations against H2, so a migration that drifts from the JPA entities fails the suite.
 
 ## Known limitations
 

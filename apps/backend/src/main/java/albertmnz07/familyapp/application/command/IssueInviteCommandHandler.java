@@ -2,7 +2,7 @@ package albertmnz07.familyapp.application.command;
 
 import albertmnz07.familyapp.application.port.Clock;
 import albertmnz07.familyapp.application.port.InviteCodeGenerator;
-import albertmnz07.familyapp.domain.exception.NotFoundException;
+import albertmnz07.familyapp.domain.exception.ResourceNotFoundException;
 import albertmnz07.familyapp.domain.model.Family;
 import albertmnz07.familyapp.domain.model.Invite;
 import albertmnz07.familyapp.domain.repository.FamilyRepository;
@@ -42,7 +42,8 @@ public class IssueInviteCommandHandler
         Family family =
                 families.findById(familyId)
                         .orElseThrow(() ->
-                                new NotFoundException("Family not found: " + familyId.value()));
+                                new ResourceNotFoundException(
+                                        "Family not found: " + familyId.value()));
         family.requireAdmin(actorId);
         Instant issuedAt = clock.now();
         for (int attempt = 0; attempt < MAX_CODE_ATTEMPTS; attempt++) {

@@ -1,12 +1,11 @@
 package albertmnz07.familyapp.application.query;
 
 import albertmnz07.familyapp.application.port.PhotoStore;
-import albertmnz07.familyapp.domain.exception.NotFoundException;
+import albertmnz07.familyapp.domain.exception.ResourceNotFoundException;
 import albertmnz07.familyapp.domain.model.Persona;
 import albertmnz07.familyapp.domain.repository.PersonaRepository;
 import albertmnz07.familyapp.domain.valueobject.DniPhoto;
 import albertmnz07.familyapp.domain.valueobject.PersonaId;
-import java.util.Optional;
 
 public class GetMyDniPhotoQueryHandler implements QueryHandler<GetMyDniPhotoQuery, DniPhotoView> {
 
@@ -23,15 +22,11 @@ public class GetMyDniPhotoQueryHandler implements QueryHandler<GetMyDniPhotoQuer
         PersonaId id = new PersonaId(query.personaId());
         Persona persona =
                 personas.findById(id)
-                        .orElseThrow(
-                                () -> new NotFoundException("Persona not found: " + id.value()));
-        NotFoundException missing =
-                new NotFoundException(query.side().label() + " photo not found");
-        Optional<DniPhoto> photo =
-                query.side() == GetMyDniPhotoQuery.Side.FRONT
-                        ? persona.dni().front()
-                        : persona.dni().back();
-        DniPhoto stored = photo.orElseThrow(() -> missing);
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException("Persona not found: " + id.value()));
+        ResourceNotFoundException missing =
+                new ResourceNotFoundException(query.side().displayName() + " photo not found");
+        DniPhoto stored = persona.dni().photo(query.side()).orElseThrow(() -> missing);
         byte[] content = photos.get(stored.key()).orElseThrow(() -> missing);
         return new DniPhotoView(content, stored.contentType().value());
     }

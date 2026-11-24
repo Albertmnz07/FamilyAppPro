@@ -1,7 +1,7 @@
 package albertmnz07.familyapp.application.query;
 
 import albertmnz07.familyapp.domain.exception.ForbiddenException;
-import albertmnz07.familyapp.domain.exception.NotFoundException;
+import albertmnz07.familyapp.domain.exception.ResourceNotFoundException;
 import albertmnz07.familyapp.domain.model.Family;
 import albertmnz07.familyapp.domain.model.Membership;
 import albertmnz07.familyapp.domain.model.Persona;
@@ -23,23 +23,18 @@ final class MemberDniVisibility {
             FamilyId familyId,
             PersonaId viewerId,
             PersonaId targetId) {
-        Family family =
-                families.findById(familyId)
-                        .orElseThrow(() ->
-                                new NotFoundException("Family not found: " + familyId.value()));
-        if (!memberships.existsAccepted(family.id(), viewerId)) {
-            throw new ForbiddenException("Persona is not a member of this family");
-        }
+        Family family = FamilyAccess.requireMemberAccess(families, memberships, familyId, viewerId);
         Persona target =
                 personas.findById(targetId)
                         .orElseThrow(() ->
-                                new NotFoundException("Persona not found: " + targetId.value()));
+                                new ResourceNotFoundException(
+                                        "Persona not found: " + targetId.value()));
         Membership targetMembership =
                 memberships
                         .findByFamilyAndPersona(family.id(), target.id())
                         .filter(Membership::isAccepted)
                         .orElseThrow(() ->
-                                new NotFoundException(
+                                new ResourceNotFoundException(
                                         "Member not found in family: " + targetId.value()));
         return targetMembership
                 .visibleDni(target.dni())

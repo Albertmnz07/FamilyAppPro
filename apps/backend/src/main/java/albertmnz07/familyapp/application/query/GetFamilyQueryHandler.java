@@ -1,7 +1,5 @@
 package albertmnz07.familyapp.application.query;
 
-import albertmnz07.familyapp.domain.exception.ForbiddenException;
-import albertmnz07.familyapp.domain.exception.NotFoundException;
 import albertmnz07.familyapp.domain.model.Family;
 import albertmnz07.familyapp.domain.repository.FamilyRepository;
 import albertmnz07.familyapp.domain.repository.MembershipRepository;
@@ -20,15 +18,12 @@ public class GetFamilyQueryHandler implements QueryHandler<GetFamilyQuery, Famil
 
     @Override
     public FamilyView handle(GetFamilyQuery query) {
-        FamilyId familyId = new FamilyId(query.familyId());
-        PersonaId viewerId = new PersonaId(query.viewerPersonaId());
         Family family =
-                families.findById(familyId)
-                        .orElseThrow(() ->
-                                new NotFoundException("Family not found: " + familyId.value()));
-        if (!memberships.existsAccepted(family.id(), viewerId)) {
-            throw new ForbiddenException("Persona is not a member of this family");
-        }
+                FamilyAccess.requireMemberAccess(
+                        families,
+                        memberships,
+                        new FamilyId(query.familyId()),
+                        new PersonaId(query.viewerPersonaId()));
         return FamilyView.of(family);
     }
 }

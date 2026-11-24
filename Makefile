@@ -132,3 +132,4 @@ run: build
 ## clean: remove build artifacts (apps/backend/target and apps/frontend/dist)
 clean:
 	cd $(BACKEND) && ./mvnw clean
+	rm -rf $(FRONTEND)/dist

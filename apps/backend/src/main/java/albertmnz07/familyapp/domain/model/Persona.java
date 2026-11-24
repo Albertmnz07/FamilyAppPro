@@ -53,6 +53,10 @@ public final class Persona {
         return dni;
     }
 
+    public String dniValue() {
+        return dni.value();
+    }
+
     public Optional<PasswordHash> passwordHash() {
         return Optional.ofNullable(passwordHash);
     }

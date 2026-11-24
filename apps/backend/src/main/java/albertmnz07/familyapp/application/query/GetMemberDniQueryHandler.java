@@ -33,7 +33,7 @@ public class GetMemberDniQueryHandler implements QueryHandler<GetMemberDniQuery,
         return new MemberDniView(
                 familyId.value(),
                 targetId.value(),
-                visibleDni.number().value(),
+                visibleDni.value(),
                 visibleDni.front().isPresent(),
                 visibleDni.back().isPresent());
     }

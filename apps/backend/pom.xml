@@ -132,6 +132,11 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<!-- Run from the repository root so `./data/photos` resolves to root
+					     `data/photos` on the host and `/workspace/data/photos` in compose.dev.yml. -->
+					<workingDirectory>${project.basedir}/../..</workingDirectory>
+				</configuration>
 			</plugin>
 			<!-- Single-artifact deployment (ADR-0006): package builds the
 			     front-end and copies its dist into the jar's static resources.

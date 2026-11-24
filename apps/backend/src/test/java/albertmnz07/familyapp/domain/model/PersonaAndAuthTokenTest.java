@@ -36,7 +36,7 @@ class PersonaAndAuthTokenTest {
     void aRegisteredPersonaHasNoPhotosAndKeepsItsHash() {
         Persona persona = persona();
 
-        assertThat(persona.dni().number().value()).isEqualTo("1A");
+        assertThat(persona.dniValue()).isEqualTo("1A");
         assertThat(persona.dni().front()).isEmpty();
         assertThat(persona.dni().back()).isEmpty();
         assertThat(persona.passwordHash()).contains(new PasswordHash("hash"));
