@@ -110,4 +110,47 @@ class ValueObjectsTest {
         assertThat(both.back()).contains(back);
         assertThat(both.number()).isEqualTo(DniNumber.of("X1"));
     }
+
+    @Test
+    void typedAggregateAndEntityIdsParseOnlyValidUuids() {
+        FamilyId familyId = FamilyId.generate();
+        InviteId inviteId = InviteId.generate();
+        MembershipId membershipId = MembershipId.generate();
+        ConsentId consentId = ConsentId.generate();
+
+        assertThat(FamilyId.parse(familyId.value().toString())).isEqualTo(familyId);
+        assertThat(InviteId.parse(inviteId.value().toString())).isEqualTo(inviteId);
+        assertThat(MembershipId.parse(membershipId.value().toString())).isEqualTo(membershipId);
+        assertThat(ConsentId.parse(consentId.value().toString())).isEqualTo(consentId);
+
+        assertThatThrownBy(() -> FamilyId.parse("not-a-uuid"))
+                .isInstanceOf(InvalidValueException.class);
+        assertThatThrownBy(() -> InviteId.parse(null)).isInstanceOf(InvalidValueException.class);
+        assertThatThrownBy(() -> MembershipId.parse("")).isInstanceOf(InvalidValueException.class);
+        assertThatThrownBy(() -> ConsentId.parse("bad")).isInstanceOf(InvalidValueException.class);
+    }
+
+    @Test
+    void familyNameRequiresNonBlankTextUpToOneHundredCharacters() {
+        assertThat(FamilyName.of("Familia García").value()).isEqualTo("Familia García");
+        assertThatCode(() -> FamilyName.of("a".repeat(100))).doesNotThrowAnyException();
+
+        assertThatThrownBy(() -> FamilyName.of(null)).isInstanceOf(InvalidValueException.class);
+        assertThatThrownBy(() -> FamilyName.of("")).isInstanceOf(InvalidValueException.class);
+        assertThatThrownBy(() -> FamilyName.of("   ")).isInstanceOf(InvalidValueException.class);
+        assertThatThrownBy(() -> FamilyName.of("a".repeat(101)))
+                .isInstanceOf(InvalidValueException.class);
+    }
+
+    @Test
+    void inviteCodeTrimsUppercasesAndRequiresSixAlphanumericCharacters() {
+        assertThat(InviteCode.of("  ab12z9 ").value()).isEqualTo("AB12Z9");
+        assertThat(InviteCode.of("0O1IL9").value()).isEqualTo("0O1IL9");
+
+        assertThatThrownBy(() -> InviteCode.of(null)).isInstanceOf(InvalidValueException.class);
+        assertThatThrownBy(() -> InviteCode.of("ABC12")).isInstanceOf(InvalidValueException.class);
+        assertThatThrownBy(() -> InviteCode.of("ABC1234"))
+                .isInstanceOf(InvalidValueException.class);
+        assertThatThrownBy(() -> InviteCode.of("AB-123")).isInstanceOf(InvalidValueException.class);
+    }
 }

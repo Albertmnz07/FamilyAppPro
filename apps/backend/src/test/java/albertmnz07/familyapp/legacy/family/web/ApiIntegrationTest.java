@@ -365,6 +365,72 @@ class ApiIntegrationTest {
     }
 
     @Test
+    void rejectsAnOversizedFamilyName() throws Exception {
+        registerPersona(ADMIN_DNI);
+
+        mvc.perform(
+                        post("/api/v1/families")
+                                .header(AUTH, bearer(ADMIN_DNI))
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("{\"name\":\"" + "a".repeat(101) + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("validation-failed"));
+    }
+
+    @Test
+    void gettingAMissingFamilyReturnsNotFound() throws Exception {
+        registerPersona(ADMIN_DNI);
+
+        mvc.perform(get("/api/v1/families/" + UUID.randomUUID()).header(AUTH, bearer(ADMIN_DNI)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("not-found"));
+    }
+
+    @Test
+    void myFamiliesListingIgnoresClientSortAndOrdersCaseInsensitively() throws Exception {
+        registerPersona(ADMIN_DNI);
+        createFamily(ADMIN_DNI, "zúñiga");
+        createFamily(ADMIN_DNI, "Alfaro");
+
+        mvc.perform(
+                        get("/api/v1/me/families")
+                                .header(AUTH, bearer(ADMIN_DNI))
+                                .param("sort", "name,desc"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].name").value("Alfaro"))
+                .andExpect(jsonPath("$.content[1].name").value("zúñiga"))
+                .andExpect(jsonPath("$.pageable.sort.sorted").value(false));
+    }
+
+    @Test
+    void malformedInviteTokensReturnNotFoundWhileLowercaseCodesAreNormalized() throws Exception {
+        registerPersona(ADMIN_DNI);
+        UUID familyId = createFamily(ADMIN_DNI, "Familia García");
+        String code = issueInvite(ADMIN_DNI, familyId);
+        UUID memberId = registerPersona(MEMBER_DNI);
+
+        mvc.perform(post("/api/v1/invites/bad!/redemption").header(AUTH, bearer(MEMBER_DNI)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("not-found"));
+
+        mvc.perform(
+                        post("/api/v1/invites/TOO-LONG-CODE/redemption")
+                                .header(AUTH, bearer(MEMBER_DNI)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("not-found"));
+
+        mvc.perform(
+                        post("/api/v1/invites/"
+                                        + code.toLowerCase(java.util.Locale.ROOT)
+                                        + "/redemption")
+                                .header(AUTH, bearer(MEMBER_DNI)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.familyId").value(familyId.toString()))
+                .andExpect(jsonPath("$.personaId").value(memberId.toString()))
+                .andExpect(jsonPath("$.status").value("ACCEPTED"));
+    }
+
+    @Test
     void onlyTheAdminCanIssueInvites() throws Exception {
         registerPersona(ADMIN_DNI);
         UUID familyId = createFamily(ADMIN_DNI, "Familia García");

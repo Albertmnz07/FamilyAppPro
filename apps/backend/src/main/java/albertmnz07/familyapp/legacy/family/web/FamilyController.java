@@ -7,13 +7,11 @@ import albertmnz07.familyapp.infrastructure.web.PhotoResponses;
 import albertmnz07.familyapp.legacy.family.Dni;
 import albertmnz07.familyapp.legacy.family.Family;
 import albertmnz07.familyapp.legacy.family.FamilyService;
-import albertmnz07.familyapp.legacy.family.Invite;
 import albertmnz07.familyapp.legacy.family.Persona;
 import albertmnz07.familyapp.legacy.family.PersonaRepository;
 import albertmnz07.familyapp.legacy.family.error.ForbiddenException;
 import albertmnz07.familyapp.legacy.family.error.NotFoundException;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -25,12 +23,10 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-@RestController
+@RestController("legacyFamilyController")
 @Validated
 @Tag(name = "Families")
 public class FamilyController {
@@ -45,26 +41,6 @@ public class FamilyController {
         this.photos = photos;
     }
 
-    @PostMapping("/api/v1/families")
-    @ResponseStatus(HttpStatus.CREATED)
-    public FamilyResponse create(
-            @ActingPersona Persona creator, @Valid @RequestBody CreateFamilyRequest request) {
-        return FamilyResponse.of(families.createFamily(creator, request.name()));
-    }
-
-    @GetMapping("/api/v1/me/families")
-    public Page<FamilyResponse> mine(
-            @ActingPersona Persona persona, @PageableDefault(size = 20) Pageable pageable) {
-        return families.listFamiliesFor(persona, pageable).map(FamilyResponse::of);
-    }
-
-    @GetMapping("/api/v1/families/{familyId}")
-    public FamilyResponse get(@ActingPersona Persona viewer, @PathVariable UUID familyId) {
-        Family family = families.getFamily(familyId);
-        families.requireAcceptedMember(family, viewer);
-        return FamilyResponse.of(family);
-    }
-
     @GetMapping("/api/v1/families/{familyId}/members")
     public Page<MemberResponse> members(
             @ActingPersona Persona viewer,
@@ -77,15 +53,6 @@ public class FamilyController {
                         MemberResponse.of(
                                 membership,
                                 families.isConsentInForce(family, membership.getPersona())));
-    }
-
-    @PostMapping("/api/v1/families/{familyId}/invites")
-    @ResponseStatus(HttpStatus.CREATED)
-    public InviteResponse issueInvite(@ActingPersona Persona actor, @PathVariable UUID familyId) {
-        Family family = families.getFamily(familyId);
-        families.requireAdmin(family, actor);
-        Invite invite = families.issueInvite(family);
-        return InviteResponse.of(invite);
     }
 
     @DeleteMapping("/api/v1/families/{familyId}/members/{personaId}")

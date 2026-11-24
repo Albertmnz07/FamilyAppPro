@@ -1,4 +1,4 @@
-package albertmnz07.familyapp.legacy.family.web;
+package albertmnz07.familyapp.infrastructure.web;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
