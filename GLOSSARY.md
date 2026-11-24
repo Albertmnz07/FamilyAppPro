@@ -21,7 +21,7 @@ A persona's unique, lowercase handle (3–30 letters, digits, dots, underscores 
 _Avoid_: Nick, Display name
 
 **Family**:
-A grouping of personas that can see one another's DNI while consent is in force, created by one persona who acts as admin.
+A named grouping of personas (non-blank name, up to 100 characters) that can see one another's DNI while consent is in force, created by one persona who acts as admin.
 _Avoid_: Group, Team
 
 **Admin**:
