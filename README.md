@@ -64,7 +64,7 @@ Both stacks publish port 8070, so stop one before starting the other: `make dev-
 sudo -u postgres psql -f db/bootstrap.sql
 ```
 
-This creates the `familyapp` role (`familyapp` / `familyapp`) and the `familyapp` database. Flyway applies the migrations in `src/main/resources/db/migration` on every start, so the schema is never created by hand.
+This creates the `familyapp` role (`familyapp` / `familyapp`) and the `familyapp` database. Flyway applies the migrations in `apps/backend/src/main/resources/db/migration` on every start, so the schema is never created by hand.
 
 To start over, stop the app, then drop and re-create the database and delete the photo store:
 
@@ -83,13 +83,13 @@ make run
 `make run` builds the artifact (`make build`, i.e. `./mvnw package`) and starts the jar:
 
 ```bash
-./mvnw package
-java -jar target/demo-0.0.1-SNAPSHOT.jar
+(cd apps/backend && ./mvnw package)
+java -jar apps/backend/target/familyapp-0.0.1-SNAPSHOT.jar
 ```
 
 Then open <http://localhost:8070>.
 
-The `package` phase runs `npm ci` and `npm run build` inside `frontend/` and copies `frontend/dist` into the jar's static resources, so the one process serves both the app and the API at the same origin — no second server and no CORS involved. Building the artifact requires npm on the build machine; `./mvnw test` does not.
+The `package` phase runs `npm ci` and `npm run build` inside `apps/frontend/` and copies `apps/frontend/dist` into the jar's static resources, so the one process serves both the app and the API at the same origin — no second server and no CORS involved. Building the artifact requires npm on the build machine; `./mvnw test` does not.
 
 ### Run the front-end in development (optional)
 
@@ -97,7 +97,7 @@ Two processes, with Vite serving the app and proxying nothing — the front-end 
 
 ```bash
 # terminal 1
-./mvnw spring-boot:run
+(cd apps/backend && ./mvnw spring-boot:run)
 
 # terminal 2
 cd frontend
@@ -188,15 +188,15 @@ Members are listed alphabetically by DNI. Each member exposes its `username` (al
 
 ## Database and migrations
 
-The schema is owned by the ordered migrations in `src/main/resources/db/migration`, applied by Flyway on startup; Hibernate never changes the schema, it only validates the migrated one against the entities (`spring.jpa.hibernate.ddl-auto=validate`).
+The schema is owned by the ordered migrations in `apps/backend/src/main/resources/db/migration`, applied by Flyway on startup; Hibernate never changes the schema, it only validates the migrated one against the entities (`spring.jpa.hibernate.ddl-auto=validate`).
 
 `V1` captures the schema that `ddl-auto=update` produced (including the legacy `front_photo`/`back_photo` bytea columns); `V2` drops those columns after the move to object storage. A database created before Flyway was adopted is baselined at V1, so it skips `V1` and receives `V2` and every later migration. To change the schema, add a migration — `V3__add_membership_status_index.sql` — and never edit one that has already been applied.
 
 ## Front-end
 
-The React + TypeScript + Vite app lives in `frontend/` (see `docs/adr/0006-frontend-location-and-api-base-url.md`). It reaches the API by absolute URL from `VITE_API_BASE_URL`, defaulting to `http://localhost:8070/api/v1`; there is no dev proxy, so development relies on the CORS origins above.
+The React + TypeScript + Vite app lives in `apps/frontend/` (see `docs/adr/0006-frontend-location-and-api-base-url.md`). It reaches the API by absolute URL from `VITE_API_BASE_URL`, defaulting to `http://localhost:8070/api/v1`; there is no dev proxy, so development relies on the CORS origins above.
 
-The production build is integrated into the single Spring artifact: `npm run build` (which runs `tsc -b && vite build`) emits `frontend/dist`, and the Maven `package` phase runs `npm ci` and `npm run build` in `frontend/` and copies `frontend/dist` into the jar's static resources (`target/classes/static`). The npm steps are bound to `prepare-package`, after the test phase, so `./mvnw test` never needs Node.
+The production build is integrated into the single Spring artifact: `npm run build` (which runs `tsc -b && vite build`) emits `apps/frontend/dist`, and the Maven `package` phase runs `npm ci` and `npm run build` in `apps/frontend/` and copies `apps/frontend/dist` into the jar's static resources (`apps/backend/target/classes/static`). The npm steps are bound to `prepare-package`, after the test phase, so `./mvnw test` never needs Node.
 
 ### Checks
 
@@ -228,8 +228,8 @@ make test
 `make test` runs both suites:
 
 ```bash
-./mvnw test                      # backend, on H2 in PostgreSQL mode
-npm --prefix frontend run check  # typecheck, lint and front-end tests
+make test-backend                   # backend, on H2 in PostgreSQL mode
+npm --prefix apps/frontend run check  # typecheck, lint and front-end tests
 ```
 
 The backend tests run the same Flyway migrations against H2, so a migration that drifts from the entities fails the suite.

@@ -12,7 +12,9 @@
 
 DEV_COMPOSE  := docker compose -f compose.dev.yml
 PROD_COMPOSE := docker compose -f compose.prod.yml
-JAR          := target/demo-0.0.1-SNAPSHOT.jar
+JAR          := apps/backend/target/familyapp-0.0.1-SNAPSHOT.jar
+BACKEND      := apps/backend
+FRONTEND     := apps/frontend
 
 .DEFAULT_GOAL := help
 
@@ -96,11 +98,11 @@ test: test-backend test-frontend
 
 ## test-backend: run the backend suite (H2 in PostgreSQL mode)
 test-backend:
-	./mvnw test
+	cd $(BACKEND) && ./mvnw test
 
 ## test-frontend: typecheck, lint and run the front-end suite
 test-frontend:
-	npm --prefix frontend run check
+	npm --prefix $(FRONTEND) run check
 
 ## check: alias for test-frontend, matching the git hook
 check: test-frontend
@@ -109,24 +111,24 @@ check: test-frontend
 
 ## format: apply Spotless (back-end) and Prettier (front-end) to the whole tree
 format:
-	./mvnw -q spotless:apply
-	npm --prefix frontend run format
+	cd $(BACKEND) && ./mvnw -q spotless:apply
+	npm --prefix $(FRONTEND) run format
 
 ## format-check: verify formatting without writing (what pre-push runs)
 format-check:
-	./mvnw -q spotless:check
-	npm --prefix frontend run format:check
+	cd $(BACKEND) && ./mvnw -q spotless:check
+	npm --prefix $(FRONTEND) run format:check
 
 # --- Build and run ----------------------------------------------------------
 
 ## build: build the single artifact with the front-end inside the jar
 build:
-	./mvnw package
+	cd $(BACKEND) && ./mvnw package
 
 ## run: build the artifact and run it on http://localhost:8070
 run: build
 	java -jar $(JAR)
 
-## clean: remove build artifacts (target/ and frontend/dist)
+## clean: remove build artifacts (apps/backend/target and apps/frontend/dist)
 clean:
-	./mvnw clean
+	cd $(BACKEND) && ./mvnw clean

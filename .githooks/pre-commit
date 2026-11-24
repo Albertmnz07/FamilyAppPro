@@ -12,9 +12,9 @@ staged=$(git diff --cached --name-only --diff-filter=ACM)
 
 # Front-end: Prettier formats the staged TypeScript/TSX/CSS in place. The
 # generated API types are excluded (they come from `npm run api:refresh`).
-files=$(printf '%s\n' "$staged" | grep -E '^frontend/src/.*\.(ts|tsx|css)$' | grep -v 'schema\.d\.ts' || true)
+files=$(printf '%s\n' "$staged" | grep -E '^apps/frontend/src/.*\.(ts|tsx|css)$' | grep -v 'schema\.d\.ts' || true)
 if [ -n "$files" ]; then
-  printf '%s\n' "$files" | xargs frontend/node_modules/.bin/prettier --write
+  printf '%s\n' "$files" | xargs apps/frontend/node_modules/.bin/prettier --write
   printf '%s\n' "$files" | xargs git add
 fi
 
@@ -23,8 +23,8 @@ fi
 files=$(printf '%s\n' "$staged" | grep -E '\.java$' || true)
 if [ -n "$files" ]; then
   patterns=$(printf '%s\n' "$files" | sed 's|\.|\\.|g; s|^|'"$PWD"'/|' | paste -sd, -)
-  ./mvnw -q spotless:apply -DspotlessFiles="$patterns"
+  (cd apps/backend && ./mvnw -q spotless:apply -DspotlessFiles="$patterns")
   printf '%s\n' "$files" | xargs git add
 fi
 
-npm --prefix frontend run check
+npm --prefix apps/frontend run check

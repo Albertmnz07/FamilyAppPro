@@ -60,7 +60,7 @@ services:
 
   frontend:
     build:
-      context: ./frontend
+      context: ./apps/frontend
       target: dev
     environment:
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8070/api/v1}
@@ -69,7 +69,7 @@ services:
     volumes:
       # Source bind-mounted for hot reload; the anonymous volume keeps the
       # image's `npm ci` install instead of the host's node_modules.
-      - ./frontend:/app
+      - ./apps/frontend:/app
       - /app/node_modules
 
 volumes:

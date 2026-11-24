@@ -6,7 +6,7 @@
 # the front-end source both live there.
 
 # Node 24 is copied into the Maven builder because the `package` phase runs
-# `npm ci` and `npm run build` in frontend/ (see pom.xml).
+# `npm ci` and `npm run build` in apps/frontend/ (see pom.xml).
 FROM node:24-bookworm-slim AS node
 
 FROM maven:3.9-eclipse-temurin-21 AS builder
@@ -31,12 +31,12 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 # Java-only or TypeScript-only change reuses the downloaded Maven and npm
 # artifacts instead of fetching them again. This is what makes a code-only
 # redeploy fast.
-COPY .mvn/ .mvn/
-COPY mvnw mvnw.cmd pom.xml ./
-RUN ./mvnw -B -q dependency:go-offline
+COPY apps/backend/.mvn/ apps/backend/.mvn/
+COPY apps/backend/mvnw apps/backend/mvnw.cmd apps/backend/pom.xml apps/backend/
+RUN ./apps/backend/mvnw -f apps/backend/pom.xml -B -q dependency:go-offline
 
-COPY frontend/package.json frontend/package-lock.json frontend/
-RUN npm ci --prefix frontend
+COPY apps/frontend/package.json apps/frontend/package-lock.json apps/frontend/
+RUN npm ci --prefix apps/frontend
 
 # --- Source layer ------------------------------------------------------------
 # Everything else. A source change invalidates this layer and the package step
@@ -44,13 +44,13 @@ RUN npm ci --prefix frontend
 # runs `npm ci` (see pom.xml); it now resolves from the warmed npm cache and
 # reinstalls only when the lockfile changes.
 COPY . .
-RUN ./mvnw -B package -DskipTests
+RUN ./apps/backend/mvnw -f apps/backend/pom.xml -B package -DskipTests
 
 # Runtime: only the jar and a JRE. The front-end is already inside the jar's
 # static resources, so no Node or Maven reaches production.
 FROM eclipse-temurin:21-jre AS runtime
 WORKDIR /app
-COPY --from=builder /workspace/target/*.jar /app/app.jar
+COPY --from=builder /workspace/apps/backend/target/*.jar /app/app.jar
 EXPOSE 8070
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
 
@@ -58,6 +58,6 @@ ENTRYPOINT ["java", "-jar", "/app/app.jar"]
 # mounts the repository at /workspace and keeps the image's Maven cache. The
 # wrapper keeps dev on the same Maven 3.9.9 as the builder.
 FROM maven:3.9-eclipse-temurin-21 AS dev
-WORKDIR /workspace
+WORKDIR /workspace/apps/backend
 EXPOSE 8070
 CMD ["./mvnw", "spring-boot:run"]

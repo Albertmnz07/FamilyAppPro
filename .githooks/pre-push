@@ -3,6 +3,6 @@
 # anything leaves the machine.
 # Enable once per clone with: make setup
 set -e
-./mvnw -q spotless:check
-npm --prefix frontend run format:check
-./mvnw -q test
+(cd apps/backend && ./mvnw -q spotless:check)
+npm --prefix apps/frontend run format:check
+(cd apps/backend && ./mvnw -q test)

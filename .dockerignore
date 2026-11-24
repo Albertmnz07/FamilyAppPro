@@ -2,9 +2,9 @@
 # repository root, so this is the root .dockerignore rather than backend/.dockerignore.
 # Keep the sources and the Maven wrapper; drop host build output, dependencies
 # and local data.
-target/
-frontend/node_modules/
-frontend/dist/
+apps/backend/target/
+apps/frontend/node_modules/
+apps/frontend/dist/
 data/
 .git/
 .idea/
